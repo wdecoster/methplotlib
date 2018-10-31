@@ -31,11 +31,24 @@ def get_data(args):
     return [read_meth_freq(f, args.window) for f in args.methylation]
 
 
-def meth_browser(methlist, names):
+def parse_gtf(gtff, window):
+    if not gtff:
+        return False
+    else:
+        chromosome, begin, end = parse_region(window)
+
+
+def meth_browser(methlist, names, annotation=False):
+    """
+    methlist is a list of pandas dataframes containing 'chromosome', 'pos', 'methylated_frequency'
+    names should have the same length as methlist and contain identifiers for the datasets
+    annotation is optional and is a gtf processed by parse_gtf()
+    """
     data = [go.Scatter(x=a.index, y=a["methylated_frequency"],
                        mode='lines+markers',
                        name=n) for a, n in zip(methlist, names)]
-
+    if annotation:
+        data = data + plotly_gtf(annotation)
     html = plotly.offline.plot(
         {"data": data,
          "layout": go.Layout(barmode='overlay',
@@ -50,7 +63,8 @@ def meth_browser(methlist, names):
 def main():
     args = get_args()
     methlist = get_data(args)
-    meth_browser(methlist, args.names)
+    annotation = parse_gtf(args.gtf, args.window)
+    meth_browser(methlist, names=args.names, annotation=annotation)
 
 
 def get_args():
@@ -66,6 +80,8 @@ def get_args():
     parser.add_argument("-w", "--window",
                         help="window (region) to which the visualisation has to be restricted",
                         required=True)
+    parser.add_argument("-g", "--gtf",
+                        help="add annotation based on a gtf file matching to your reference genome")
     args = parser.parse_args()
     if not len(args.names) == len(args.methylation):
         sys.exit("INPUT ERROR: Expecting the same number of names as datasets!")

@@ -4,6 +4,15 @@ import sys
 import plotly
 import plotly.graph_objs as go
 from argparse import ArgumentParser
+from gtfparse import read_gtf
+
+
+class Transcript(object):
+    def __init__(self, identifier, name, exontuples, strand):
+        self.identifier = identifier
+        self.name = name
+        self.exontuples = list(exontuples)
+        self.strand = strand
 
 
 def parse_region(region):
@@ -36,6 +45,24 @@ def parse_gtf(gtff, window):
         return False
     else:
         chromosome, begin, end = parse_region(window)
+        gtf = read_gtf(gtff)
+        columns = ["start", "end", "strand", "transcript_id", "transcript_name"]
+        gtf_f = gtf.loc[(gtf["feature"] == "exon") & (gtf["seqname"] == chromosome), columns]
+        transcript_slice = (gtf_f.groupby("transcript_id")["start"].max() > begin) & (
+            gtf_f.groupby("transcript_id")["end"].min() < end)
+        transcripts = transcript_slice[transcript_slice].index
+        region = gtf_f.loc[gtf_f["transcript_id"].isin(transcripts)]
+        result = []
+        for t in transcripts:
+            tr = region.loc[region["transcript_id"] == t]
+            result.append(
+                Transcript(transcript_id=t,
+                           name=tr["transcript_name"].tolist()[0],
+                           exon_tuples=tr.loc[:, ["start", "end"]]
+                           .sort_values("start")
+                           .itertuples(index=False, name=None),
+                           strand=tr["strand"].tolist()[0])
+            )
 
 
 def meth_browser(methlist, names, annotation=False):

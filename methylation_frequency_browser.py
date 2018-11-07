@@ -59,7 +59,7 @@ def parse_gtf(gtff, window):
         return False
     else:
         gtf = read_gtf(gtff)
-        columns = ["start", "end", "strand", "transcript_id", "transcript_name"]
+        columns = ["start", "end", "strand", "transcript_id", "gene_name"]
         gtf_f = gtf.loc[(gtf["feature"] == "exon") & (gtf["seqname"] == window.chromosome), columns]
         transcript_slice = (gtf_f.groupby("transcript_id")["start"].max() > window.begin) & (
             gtf_f.groupby("transcript_id")["end"].min() < window.end)
@@ -70,7 +70,7 @@ def parse_gtf(gtff, window):
             tr = region.loc[region["transcript_id"] == t]
             result.append(
                 Transcript(transcript_id=t,
-                           name=tr["transcript_name"].tolist()[0],
+                           name=tr["gene_name"].tolist()[0],
                            exon_tuples=tr.loc[:, ["start", "end"]]
                            .sort_values("start")
                            .itertuples(index=False, name=None),

@@ -84,7 +84,7 @@ def parse_gtf(gtff, window):
                            .itertuples(index=False, name=None),
                            strand=tr["strand"].tolist()[0])
             )
-        sys.stderr.write("Found {} overlapping transcripts".format(len(result)))
+        sys.stderr.write("Found {} overlapping transcripts.\n".format(len(result)))
         return result
 
 

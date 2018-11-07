@@ -17,6 +17,7 @@ class Transcript(object):
         self.strand = strand
         self.begin = min(list(itertools.chain.from_iterable(self.exon_tuples)))
         self.end = max(list(itertools.chain.from_iterable(self.exon_tuples)))
+        self.color = ""
 
 
 class Region(object):
@@ -77,6 +78,11 @@ def parse_gtf(gtff, window):
                            strand=tr["strand"].tolist()[0])
             )
         sys.stderr.write("Found {} overlapping transcripts.\n".format(len(result)))
+        genes = set([t.name for t in result])
+        colors = plotly.colors.DEFAULT_PLOTLY_COLORS * 100
+        colordict = {g: c for g, c in zip(genes, colors)}
+        for t in result:
+            t.color = colordict[t.name]
         return result
 
 
@@ -90,19 +96,25 @@ def plotly_annotation(annotation, window):
         line = go.Scatter(x=[max(transcript.begin, window.begin), min(transcript.end, window.end)],
                           y=[y_pos, y_pos],
                           mode='lines',
-                          line=dict(width=2),
+                          line=dict(width=2, color=transcript.color),
                           name=transcript.transcript_id,
                           text=transcript.name,
                           hoverinfo='text',
                           showlegend=False)
+        if transcript.strand == "+":
+            marker = "triangle-right"
+        else:
+            marker = "triangle-left"
         exons = [go.Scatter(x=[begin, end],
                             y=[y_pos, y_pos],
-                            mode='lines',
-                            line=dict(width=8),
+                            mode='lines+markers',
+                            line=dict(width=8, color=transcript.color),
                             name=transcript.transcript_id,
                             text=transcript.name,
                             hoverinfo='text',
-                            showlegend=False)
+                            showlegend=False,
+                            marker=dict(symbol=marker,
+                                        size=8))
                  for begin, end in transcript.exon_tuples
                  if window.begin < begin and window.end > end]
         result.extend([line, *exons])

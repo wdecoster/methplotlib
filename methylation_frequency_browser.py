@@ -88,14 +88,15 @@ def parse_gtf(gtff, window):
         return result
 
 
-def plotly_annotation(annotation):
+def plotly_annotation(annotation, window):
     """
     Return a plotly trace for the annotation
     with a line for the entire gene and thicker bars for exons
     """
+    chromosome, begin, end = parse_region(window)
     result = []
     for y_pos, transcript in enumerate(annotation):
-        line = go.Scatter(x=[transcript.begin, transcript.end],
+        line = go.Scatter(x=[max(transcript.begin, begin), min(transcript.end, end)],
                           y=[y_pos, y_pos],
                           mode='lines',
                           line=dict(width=2),
@@ -149,7 +150,7 @@ def meth_browser(methlist, names, window, annotation=False):
                          row=1,
                          col=1)
     if annotation:
-        annotation_traces, y_max = plotly_annotation(annotation)
+        annotation_traces, y_max = plotly_annotation(annotation, window)
         for annot_trace in annotation_traces:
             fig.append_trace(trace=annot_trace,
                              row=5,

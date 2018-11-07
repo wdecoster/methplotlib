@@ -49,10 +49,19 @@ def read_meth_freq(filename, window):
 
 
 def get_data(args):
+    """
+    Import methylation frequency from all files in args.methylation
+    within the window args.window
+    """
     return [read_meth_freq(f, args.window) for f in args.methylation]
 
 
 def parse_gtf(gtff, window):
+    """
+    Parse the gtff using read_gtf and select the relevant region
+    as determined by the window
+
+    """
     if not gtff:
         return False
     else:
@@ -80,6 +89,10 @@ def parse_gtf(gtff, window):
 
 
 def plotly_annotation(annotation):
+    """
+    Return a plotly trace for the annotation
+    with a line for the entire gene and thicker bars for exons
+    """
     result = []
     for y_pos, transcript in enumerate(annotation):
         line = go.Scatter(x=[transcript.begin, transcript.end],
@@ -104,6 +117,9 @@ def plotly_annotation(annotation):
 
 
 def plotly_methylation(meth, name):
+    """
+    Return a plotly trace for the methylation frequency of this dataset
+    """
     return go.Scatter(x=meth.index, y=meth["methylated_frequency"],
                       mode='lines+markers',
                       name=name,

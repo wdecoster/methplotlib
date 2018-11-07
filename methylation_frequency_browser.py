@@ -27,16 +27,17 @@ class Transcript(object):
         return list(zip(introns_coords, introns_coords))
 
 
-def parse_region(region):
-    chromosome, interval = region.split(':')
-    begin, end = [int(i) for i in interval.split('-')]
-    return chromosome, begin, end
+class Region(object):
+    def __init__(self, region):
+        self.chromosome, interval = region.split(':')
+        self.begin, self.end = [int(i) for i in interval.split('-')]
 
 
 def read_meth_freq(filename, window):
     table = pd.read_csv(filename, sep="\t")
-    chromosome, begin, end = parse_region(window)
-    table = table.loc[(table.chromosome == chromosome) & (table.start > begin) & (table.end < end)]
+    table = table.loc[(table.chromosome == window.chromosome) &
+                      (table.start > window.begin) &
+                      (table.end < window.end)]
     table["pos"] = np.floor(table[['start', 'end']].mean(axis=1))
     table = table.drop(columns=['start', 'end', 'num_cpgs_in_group',
                                 'called_sites', 'called_sites_methylated', 'group_sequence']) \
@@ -48,12 +49,12 @@ def read_meth_freq(filename, window):
     return table
 
 
-def get_data(args):
+def get_data(methylation_files, window):
     """
     Import methylation frequency from all files in args.methylation
     within the window args.window
     """
-    return [read_meth_freq(f, args.window) for f in args.methylation]
+    return [read_meth_freq(f, window) for f in methylation_files]
 
 
 def parse_gtf(gtff, window):
@@ -65,12 +66,11 @@ def parse_gtf(gtff, window):
     if not gtff:
         return False
     else:
-        chromosome, begin, end = parse_region(window)
         gtf = read_gtf(gtff)
         columns = ["start", "end", "strand", "transcript_id", "transcript_name"]
-        gtf_f = gtf.loc[(gtf["feature"] == "exon") & (gtf["seqname"] == chromosome), columns]
-        transcript_slice = (gtf_f.groupby("transcript_id")["start"].max() > begin) & (
-            gtf_f.groupby("transcript_id")["end"].min() < end)
+        gtf_f = gtf.loc[(gtf["feature"] == "exon") & (gtf["seqname"] == window.chromosome), columns]
+        transcript_slice = (gtf_f.groupby("transcript_id")["start"].max() > window.begin) & (
+            gtf_f.groupby("transcript_id")["end"].min() < window.end)
         transcripts = transcript_slice[transcript_slice].index
         region = gtf_f.loc[gtf_f["transcript_id"].isin(transcripts)]
         result = []
@@ -93,10 +93,9 @@ def plotly_annotation(annotation, window):
     Return a plotly trace for the annotation
     with a line for the entire gene and thicker bars for exons
     """
-    chromosome, begin, end = parse_region(window)
     result = []
     for y_pos, transcript in enumerate(annotation):
-        line = go.Scatter(x=[max(transcript.begin, begin), min(transcript.end, end)],
+        line = go.Scatter(x=[max(transcript.begin, window.begin), min(transcript.end, window.end)],
                           y=[y_pos, y_pos],
                           mode='lines',
                           line=dict(width=2),
@@ -112,7 +111,8 @@ def plotly_annotation(annotation, window):
                             text=transcript.name,
                             hoverinfo='text',
                             showlegend=False)
-                 for begin, end in transcript.exon_tuples]
+                 for begin, end in transcript.exon_tuples
+                 if window.begin < begin and window.end > end]
         result.extend([line, *exons])
     return result, y_pos
 
@@ -164,8 +164,7 @@ def meth_browser(methlist, names, window, annotation=False):
                                    showline=False,
                                    ticks='',
                                    showticklabels=False)
-    chromosome, begin, end = parse_region(window)
-    fig["layout"]["xaxis5"].update(range=[begin, end])
+    fig["layout"]["xaxis5"].update(range=[window.begin, window.end])
     html = plotly.offline.plot(fig,
                                output_type="div",
                                show_link=False)
@@ -175,9 +174,10 @@ def meth_browser(methlist, names, window, annotation=False):
 
 def main():
     args = get_args()
-    methlist = get_data(args)
-    annotation = parse_gtf(args.gtf, args.window)
-    meth_browser(methlist, names=args.names, window=args.window, annotation=annotation)
+    window = Region(args.window)
+    methlist = get_data(args.methylation, window)
+    annotation = parse_gtf(args.gtf, window)
+    meth_browser(methlist, names=args.names, window=window, annotation=annotation)
 
 
 def get_args():

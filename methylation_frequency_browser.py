@@ -2,17 +2,29 @@ import pandas as pd
 import numpy as np
 import sys
 import plotly
+from plotly import tools
 import plotly.graph_objs as go
 from argparse import ArgumentParser
 from gtfparse import read_gtf
+import itertools
 
 
 class Transcript(object):
-    def __init__(self, identifier, name, exontuples, strand):
-        self.identifier = identifier
+    def __init__(self, transcript_id, name, exon_tuples, strand):
+        self.transcript_id = transcript_id
         self.name = name
-        self.exontuples = list(exontuples)
+        self.exon_tuples = list(exon_tuples)
+        self.intron_tuples = self.exon_tuples_to_intron_tuples()
         self.strand = strand
+        self.begin = min(list(itertools.chain.from_iterable(self.exon_tuples)))
+        self.end = max(list(itertools.chain.from_iterable(self.exon_tuples)))
+
+    def exon_tuples_to_intron_tuples(self):
+        """Convert a list of exon tuples to intron tuples
+        Flattens the list, drops the first and last coordinate and creates new tuples
+        """
+        introns_coords = iter(list(itertools.chain.from_iterable(self.exon_tuples))[1:-1])
+        return list(zip(introns_coords, introns_coords))
 
 
 def parse_region(region):
@@ -63,6 +75,39 @@ def parse_gtf(gtff, window):
                            .itertuples(index=False, name=None),
                            strand=tr["strand"].tolist()[0])
             )
+        sys.stderr.write("Found {} overlapping transcripts".format(len(result)))
+        return result
+
+
+def plotly_annotation(annotation):
+    result = []
+    for y_pos, transcript in enumerate(annotation):
+        line = go.Scatter(x=[transcript.begin, transcript.end],
+                          y=[y_pos, y_pos],
+                          mode='lines',
+                          line=dict(width=2),
+                          name=transcript.transcript_id,
+                          text=transcript.name,
+                          hoverinfo='text',
+                          showlegend=False)
+        exons = [go.Scatter(x=[begin, end],
+                            y=[y_pos, y_pos],
+                            mode='lines',
+                            line=dict(width=8),
+                            name=transcript.transcript_id,
+                            text=transcript.name,
+                            hoverinfo='text',
+                            showlegend=False)
+                 for begin, end in transcript.exon_tuples]
+        result.extend([line, *exons])
+    return result
+
+
+def plotly_methylation(meth, name):
+    return go.Scatter(x=meth.index, y=meth["methylated_frequency"],
+                      mode='lines+markers',
+                      name=name,
+                      hoverinfo='name')
 
 
 def meth_browser(methlist, names, annotation=False):
@@ -71,18 +116,21 @@ def meth_browser(methlist, names, annotation=False):
     names should have the same length as methlist and contain identifiers for the datasets
     annotation is optional and is a gtf processed by parse_gtf()
     """
-    data = [go.Scatter(x=a.index, y=a["methylated_frequency"],
-                       mode='lines+markers',
-                       name=n) for a, n in zip(methlist, names)]
+    fig = tools.make_subplots(rows=2, cols=1, shared_xaxes=True)
+    for meth_trace in [plotly_methylation(a, n) for a, n in zip(methlist, names)]:
+        fig.append_trace(trace=meth_trace,
+                         row=1,
+                         col=1)
     if annotation:
-        data = data + plotly_gtf(annotation)
-    html = plotly.offline.plot(
-        {"data": data,
-         "layout": go.Layout(barmode='overlay',
-                             title="Methylation")
-         },
-        output_type="div",
-        show_link=False)
+        for annot_trace in plotly_annotation(annotation):
+            fig.append_trace(trace=annot_trace,
+                             row=2,
+                             col=1)
+    fig["layout"].update(barmode='overlay', title="Methylation")
+    html = plotly.offline.plot(fig,
+                               output_type="div",
+                               show_link=False,
+                               hovermode='closest')
     with open("methylation_browser.html", 'w') as output:
         output.write(html)
 

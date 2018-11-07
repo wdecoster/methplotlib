@@ -14,17 +14,9 @@ class Transcript(object):
         self.transcript_id = transcript_id
         self.name = name
         self.exon_tuples = list(exon_tuples)
-        self.intron_tuples = self.exon_tuples_to_intron_tuples()
         self.strand = strand
         self.begin = min(list(itertools.chain.from_iterable(self.exon_tuples)))
         self.end = max(list(itertools.chain.from_iterable(self.exon_tuples)))
-
-    def exon_tuples_to_intron_tuples(self):
-        """Convert a list of exon tuples to intron tuples
-        Flattens the list, drops the first and last coordinate and creates new tuples
-        """
-        introns_coords = iter(list(itertools.chain.from_iterable(self.exon_tuples))[1:-1])
-        return list(zip(introns_coords, introns_coords))
 
 
 class Region(object):

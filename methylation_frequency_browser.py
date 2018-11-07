@@ -113,7 +113,7 @@ def plotly_annotation(annotation):
                             showlegend=False)
                  for begin, end in transcript.exon_tuples]
         result.extend([line, *exons])
-    return result
+    return result, y_pos
 
 
 def plotly_methylation(meth, name):
@@ -126,27 +126,48 @@ def plotly_methylation(meth, name):
                       hoverinfo='name')
 
 
-def meth_browser(methlist, names, annotation=False):
+def meth_browser(methlist, names, window, annotation=False):
     """
     methlist is a list of pandas dataframes containing 'chromosome', 'pos', 'methylated_frequency'
     names should have the same length as methlist and contain identifiers for the datasets
     annotation is optional and is a gtf processed by parse_gtf()
     """
-    fig = tools.make_subplots(rows=2, cols=1, shared_xaxes=True)
+    fig = tools.make_subplots(rows=5,
+                              cols=1,
+                              shared_xaxes=True,
+                              specs=[
+                                  [{'rowspan': 4}],
+                                  [None],
+                                  [None],
+                                  [None],
+                                  [{}],
+                              ],
+                              print_grid=False
+                              )
     for meth_trace in [plotly_methylation(a, n) for a, n in zip(methlist, names)]:
         fig.append_trace(trace=meth_trace,
                          row=1,
                          col=1)
     if annotation:
-        for annot_trace in plotly_annotation(annotation):
+        annotation_traces, y_max = plotly_annotation(annotation)
+        for annot_trace in annotation_traces:
             fig.append_trace(trace=annot_trace,
-                             row=2,
+                             row=5,
                              col=1)
-    fig["layout"].update(barmode='overlay', title="Methylation")
+    fig["layout"].update(barmode='overlay',
+                         title="Methylation frequency",
+                         hovermode='closest')
+    fig["layout"]["yaxis5"].update(range=[0, y_max],
+                                   showgrid=False,
+                                   zeroline=False,
+                                   showline=False,
+                                   ticks='',
+                                   showticklabels=False)
+    chromosome, begin, end = parse_region(window)
+    fig["layout"]["xaxis5"].update(range=[begin, end])
     html = plotly.offline.plot(fig,
                                output_type="div",
-                               show_link=False,
-                               hovermode='closest')
+                               show_link=False)
     with open("methylation_browser.html", 'w') as output:
         output.write(html)
 
@@ -155,7 +176,7 @@ def main():
     args = get_args()
     methlist = get_data(args)
     annotation = parse_gtf(args.gtf, args.window)
-    meth_browser(methlist, names=args.names, annotation=annotation)
+    meth_browser(methlist, names=args.names, window=args.window, annotation=annotation)
 
 
 def get_args():

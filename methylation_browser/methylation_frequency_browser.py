@@ -185,7 +185,7 @@ def main():
 
 
 def get_args():
-    parser = ArgumentParser(description="plotting methylation for two alleles separately")
+    parser = ArgumentParser(description="plotting methylation frequency")
     parser.add_argument("-m", "--methylation",
                         nargs='+',
                         help="output of calculate_methylation_frequency.py",

@@ -1,4 +1,4 @@
-# methylation_browser
+# METHPLOTLIB
 
 This script takes data from nanopolish as processed by calculate_methylation_frequency.py to generate a genome browser view on a window.
 

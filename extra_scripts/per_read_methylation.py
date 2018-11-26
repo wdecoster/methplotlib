@@ -33,7 +33,10 @@ meth = get_data()
 html = plotly.offline.plot(
     {"data": [plot_read(meth, read) for read in meth.read_name.unique()],
      "layout": go.Layout(barmode='overlay',
-                         title="Methylation per allele across the C9ORF72 locus")
+                         title="Methylation per allele across the C9ORF72 locus",
+                         xaxis=dict(title='Genomic position'),
+                         yaxis=dict(title='Log likelihood of methylated CpG'),
+                         )
      },
     output_type="div",
     show_link=False)

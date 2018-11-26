@@ -1,3 +1,4 @@
 README.rst
 dist/
 methplotlib.egg-info/
+.remote-sync.json

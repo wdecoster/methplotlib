@@ -44,14 +44,17 @@ def get_args():
 def main():
     args = get_args()
     meth = get_data(args.methylation, args.list1, args.list2)
-
     html = plotly.offline.plot(
         {"data": [plot_read(meth, read) for read in meth.read_name.unique()],
          "layout": go.Layout(barmode='overlay',
                              title="Methylation per allele across the C9ORF72 locus",
-                             xaxis=dict(title='Genomic position'),
-                             yaxis=dict(title='Log likelihood of methylated CpG'),
-                             showLegend=args.legend,
+                             xaxis=dict(title='Genomic position',
+                                        titlefont=dict(size=25)),
+                             yaxis=dict(title='Log likelihood of methylated CpG',
+                                        titlefont=dict(size=25)),
+                             showlegend=args.legend,
+                             width=1500,
+                             height=1000,
                              )
          },
         output_type="div",

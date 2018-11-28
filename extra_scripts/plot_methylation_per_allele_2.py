@@ -51,7 +51,7 @@ def windowed_allele(meth, allele):
         .mean()
 
 
-def windowed_mean_plot(meth):
+def windowed_mean_plot(meth, legend=False):
     alleles = [windowed_allele(meth, "a1"), windowed_allele(meth, "a2")]
     colors = [('rgb(0,0,255)'), ('rgb(255,0,0)')]
     data = [go.Scatter(x=a.index, y=a.loc[:, "log_lik_ratio"], mode='lines+markers',
@@ -60,7 +60,14 @@ def windowed_mean_plot(meth):
     html = plotly.offline.plot(
         {"data": data,
          "layout": go.Layout(barmode='overlay',
-                             title="Methylation per allele")
+                             title="Methylation per allele",
+                             xaxis=dict(title='Genomic position',
+                                        titlefont=dict(size=25)),
+                             yaxis=dict(title='Averaged log likelihood of methylated CpG',
+                                        titlefont=dict(size=25)),
+                             showlegend=legend,
+                             width=1500,
+                             height=1000,)
          },
         output_type="div",
         show_link=False)
@@ -70,9 +77,10 @@ def windowed_mean_plot(meth):
 
 
 def main():
-    meth = get_data(get_args())
+    args = get_args()
+    meth = get_data(args)
     single_observation_plot(meth)
-    windowed_mean_plot(meth)
+    windowed_mean_plot(meth, legend=args.legend)
 
 
 def get_args():
@@ -80,6 +88,7 @@ def get_args():
     parser.add_argument("methylation", help="output of nanopolish call-methylation")
     parser.add_argument("--allele1", required=True, help="readIds of allele1")
     parser.add_argument("--allele2", required=True, help="readIds of allele2")
+    parser.add_argument("--legend", help="show legend", action="store_true")
     return parser.parse_args()
 
 

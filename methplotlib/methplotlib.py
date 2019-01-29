@@ -32,7 +32,7 @@ def read_meth_freq(filename, window):
                       (table.start > window.begin) &
                       (table.end < window.end)]
     table["pos"] = np.floor(table[['start', 'end']].mean(axis=1))
-    table = table.drop(columns=['start', 'end', 'num_cpgs_in_group',
+    table = table.drop(columns=['start', 'end', 'num_motifs_in_group',
                                 'called_sites', 'called_sites_methylated', 'group_sequence']) \
         .sort_values('pos') \
         .groupby('pos') \

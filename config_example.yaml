@@ -2,7 +2,7 @@ genome:
     /path/to/database/genome.fa.gz
 
 region:
-    "chr20:5,000,000-10,000,000"
+    regname: "chr20:5,000,000-10,000,000"
 
 fast5:
     sampleA: /path/to/sampleA/fast5/

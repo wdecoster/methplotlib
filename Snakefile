@@ -1,6 +1,3 @@
-configfile: "config.yaml"
-
-
 def get_fast5(wildcards):
     return config["fast5"][wildcards.sample]
 

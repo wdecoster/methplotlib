@@ -26,7 +26,7 @@ rule nanopolish_index:
         "indices/index_done_{sample}"
     shell:
         """
-        nanopolish index -f {input.sm}-d {input.f5}/ {input.fq}
+        nanopolish index -f {input.sm} -d {input.f5}/ {input.fq}
         touch {output}
         """
 

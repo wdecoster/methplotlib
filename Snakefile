@@ -24,6 +24,7 @@ rule nanopolish_index:
         sm = get_summary,
     output:
         "indices/index_done_{sample}"
+    threads: 40  # Just to ensure that this is not ran in parallel
     shell:
         """
         nanopolish index -f {input.sm} -d {input.f5}/ {input.fq}

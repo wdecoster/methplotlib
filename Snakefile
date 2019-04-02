@@ -14,8 +14,15 @@ def get_summary(wildcards):
     return config["summary"][wildcards.sample]
 
 
+def get_region(wildcards):
+    return config["region"][wildcards.region]
+
+
 rule all:
-    pass
+    input:
+        expand("methylation_frequency/{region}_{sample}.tsv",
+               sample=config["fastq"],
+               region=config["region"])
 
 rule nanopolish_index:
     input:
@@ -37,10 +44,11 @@ rule call_methylation:
         fq = get_fastq,
         bam = get_bam,
         genome = config["genome"],
-        region = config["region"],
     output:
-        "methylation_calls/{input.region}_{sample}.tsv"
+        "methylation_calls/{region}_{sample}.tsv"
     threads: 8
+    params:
+        region = get_region,
     shell:
         """
         nanopolish call-methylation \
@@ -48,14 +56,14 @@ rule call_methylation:
          -r {input.fq} \
          -b {input.bam} \
          -g {input.genome} \
-         -w {input.region} > {output}
+         -w {params.region} > {output}
         """
 
 rule methylation_frequency:
     input:
-        "methylation_calls/{input.region}_{sample}.tsv"
+        "methylation_calls/{region}_{sample}.tsv"
     output:
-        "methylation_frequency/{input.region}_{sample}.tsv"
+        "methylation_frequency/{region}_{sample}.tsv"
     shell:
         """
         scripts/calculate_methylation_frequency.py -i {input} > {output}

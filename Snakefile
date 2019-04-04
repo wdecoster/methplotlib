@@ -1,3 +1,6 @@
+import os
+
+
 def get_fast5(wildcards):
     return config["fast5"][wildcards.sample]
 
@@ -70,7 +73,9 @@ rule methylation_frequency:
         "methylation_frequency/{region}_{sample}.tsv"
     log:
         "logs/methylation/methfreq_{region}_{sample}.log"
+    params:
+        script = os.path.join(workflow.basedir, "scripts/calculate_methylation_frequency.py")
     shell:
         """
-        scripts/calculate_methylation_frequency.py -i {input} > {output}
+        python {params.script} -i {input} > {output} 2> {log}
         """

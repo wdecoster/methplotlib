@@ -39,12 +39,13 @@ def annotation(gtf, window):
     return result, y_pos
 
 
-def methylation(methylation_datasets, names):
+def methylation(methylation_files, names, window, smoothen):
     """
     Return a plotly trace for the methylation frequency of this dataset
     """
+    meth = get_data(methylation_files, window, smoothen)
     return [go.Scatter(x=meth.index, y=meth["methylated_frequency"],
-                       mode='lines+markers',
+                       mode='lines',
                        name=name,
                        hoverinfo='name')
-            for meth, name in zip(methylation_datasets, names)]
+            for meth, name in zip(meth, names)]

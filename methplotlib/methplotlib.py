@@ -13,7 +13,7 @@ def main():
                  smoothen=args.smooth)
 
 
-def meth_browser(methlist, names, window, gtf=False):
+def meth_browser(methlist, names, window, gtf=False, smoothen=5):
     """
     methlist is a list of pandas dataframes containing 'chromosome', 'pos', 'methylated_frequency'
     names should have the same length as methlist and contain identifiers for the datasets
@@ -31,7 +31,7 @@ def meth_browser(methlist, names, window, gtf=False):
                               ],
                               print_grid=False
                               )
-    for meth_trace in plots.methylation(methlist, names):
+    for meth_trace in plots.methylation(methlist, names, window, smoothen):
         fig.append_trace(trace=meth_trace, row=1, col=1)
     if gtf:
         annotation_traces, y_max = plots.annotation(gtf, window)

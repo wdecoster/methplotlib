@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 
 
-def read_meth_freq(filename, window):
+def read_meth_freq(filename, window, smoothen=5):
     table = pd.read_csv(filename, sep="\t")
     table = table.loc[(table.chromosome == window.chromosome) &
                       (table.start > window.begin) &
@@ -13,13 +13,13 @@ def read_meth_freq(filename, window):
         .sort_values('pos') \
         .groupby('pos') \
         .mean() \
-        .rolling(window=5, center=True) \
+        .rolling(window=smoothen, center=True) \
         .mean()
 
 
-def get_data(methylation_files, window):
+def get_data(methylation_files, window, smoothen):
     """
     Import methylation frequency from all files in args.methylation
     within the window args.window
     """
-    return [read_meth_freq(f, window) for f in methylation_files]
+    return [read_meth_freq(f, window, smoothen) for f in methylation_files]

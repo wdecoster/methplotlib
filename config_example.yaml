@@ -1,0 +1,25 @@
+genome:
+    /path/to/database/genome.fa.gz
+
+region:
+    regname: "chr20:5,000,000-10,000,000"
+
+fast5:
+    sampleA: /path/to/sampleA/fast5/
+    sampleB: /path/to/sampleB/fast5/
+    sampleC: /path/to/sampleC/fast5/
+
+fastq:
+    sampleA: /path/to/sampleA/reads.fastq.gz
+    sampleB: /path/to/sampleB/reads.fastq.gz
+    sampleC: /path/to/sampleC/reads.fastq.gz
+
+summary:
+    sampleA: /path/to/sampleA/summaries.fofn
+    sampleB: /path/to/sampleB/summaries.fofn
+    sampleC: /path/to/sampleC/summaries.fofn
+
+bam:
+    sampleA: /path/to/sampleA/alignment.bam
+    sampleB: /path/to/sampleB/alignment.bam
+    sampleC: /path/to/sampleC/alignment.bam

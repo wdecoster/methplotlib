@@ -5,9 +5,9 @@ from plotly.colors import DEFAULT_PLOTLY_COLORS as plcolors
 
 
 class Transcript(object):
-    def __init__(self, transcript_id, name, exon_tuples, strand):
+    def __init__(self, transcript_id, gene, exon_tuples, strand):
         self.transcript_id = transcript_id
-        self.name = name
+        self.gene = gene
         self.exon_tuples = list(exon_tuples)
         self.strand = strand
         self.marker = "triangle-right" if self.strand == "+" else "triangle-left"
@@ -29,20 +29,24 @@ def parse_gtf(gtff, window):
         gtf_f.groupby("transcript_id")["end"].min() < window.end)
     transcripts = transcript_slice[transcript_slice].index
     region = gtf_f.loc[gtf_f["transcript_id"].isin(transcripts)]
-    result = []
+    transcripts = []
     for t in transcripts:
         tr = region.loc[region["transcript_id"] == t]
-        result.append(
+        transcripts.append(
             Transcript(transcript_id=t,
-                       name=tr["gene_name"].tolist()[0],
+                       gene=tr["gene_name"].tolist()[0],
                        exon_tuples=tr.loc[:, ["start", "end"]]
                                      .sort_values("start")
                                      .itertuples(index=False, name=None),
                        strand=tr["strand"].tolist()[0])
         )
-    sys.stderr.write("Found {} transcripts in the region.\n".format(len(result)))
-    genes = set([t.name for t in result])
+    sys.stderr.write("Found {} transcripts in the region.\n".format(len(transcripts)))
+    assign_colors_to_genes(transcripts)
+    return transcripts
+
+
+def assign_colors_to_genes(transcripts):
+    genes = set([t.gene for t in transcripts])
     colordict = {g: c for g, c in zip(genes, plcolors * 100)}
-    for t in result:
-        t.color = colordict[t.name]
-    return result
+    for t in transcripts:
+        t.color = colordict[t.gene]

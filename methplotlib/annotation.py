@@ -10,6 +10,7 @@ class Transcript(object):
         self.name = name
         self.exon_tuples = list(exon_tuples)
         self.strand = strand
+        self.marker = "triangle-right" if self.strand == "+" else "triangle-left"
         self.begin = min(list(itertools.chain.from_iterable(self.exon_tuples)))
         self.end = max(list(itertools.chain.from_iterable(self.exon_tuples)))
         self.color = ""

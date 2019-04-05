@@ -6,7 +6,8 @@ from methplotlib.import_methylation import get_data
 def annotation(gtf, window):
     """
     Return a plotly trace for the annotation
-    with a line for the entire gene and thicker bars for exons
+    with a line for the entire gene and triangles for exons,
+    indicating direction of transcription
     """
     result = []
     annotation = parse_gtf(gtf, window)
@@ -41,6 +42,7 @@ def annotation(gtf, window):
 
 def methylation(methylation_files, names, window, smoothen):
     """
+    Call function get_data to parse files from calculate_methylation_frequency
     Return a plotly trace for the methylation frequency of this dataset
     """
     meth = get_data(methylation_files, window, smoothen)

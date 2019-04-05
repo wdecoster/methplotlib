@@ -3,6 +3,11 @@ import numpy as np
 
 
 def read_meth_freq(filename, window, smoothen=5):
+    """
+    converts a file from calculate_methylation_frequency to a pandas dataframe
+    containing 'chromosome', 'pos', 'methylated_frequency'
+    smoothening the result by a rolling average
+    """
     table = pd.read_csv(filename, sep="\t")
     table = table.loc[(table.chromosome == window.chromosome) &
                       (table.start > window.begin) &
@@ -19,7 +24,8 @@ def read_meth_freq(filename, window, smoothen=5):
 
 def get_data(methylation_files, window, smoothen):
     """
-    Import methylation frequency from all files in args.methylation
+    Import methylation frequency from all files in the list methylation_files
     within the window args.window
+    passing a smoothen parameter
     """
     return [read_meth_freq(f, window, smoothen) for f in methylation_files]

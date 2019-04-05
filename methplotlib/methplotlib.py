@@ -15,9 +15,9 @@ def main():
 
 def meth_browser(methlist, names, window, gtf=False, smoothen=5):
     """
-    methlist is a list of pandas dataframes containing 'chromosome', 'pos', 'methylated_frequency'
+    methlist is a list of files from calculate_methylation_frequency
     names should have the same length as methlist and contain identifiers for the datasets
-    annotation is optional and is a gtf processed by parse_gtf()
+    annotation is optional and is a gtf, which will be processed by parse_gtf()
     """
     fig = tools.make_subplots(rows=5,
                               cols=1,

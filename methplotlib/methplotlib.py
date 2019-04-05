@@ -22,7 +22,7 @@ class Transcript(object):
 
 class Region(object):
     def __init__(self, region):
-        self.chromosome, interval = region.split(':')
+        self.chromosome, interval = region.replace(',', '').split(':')
         self.begin, self.end = [int(i) for i in interval.split('-')]
 
 

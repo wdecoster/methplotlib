@@ -1,12 +1,13 @@
-from gtfparse import read_gtf
+import pandas as pd
 import itertools
 import sys
 from plotly.colors import DEFAULT_PLOTLY_COLORS as plcolors
+import gzip
 
 
 class Transcript(object):
-    def __init__(self, transcript_id, gene, exon_tuples, strand):
-        self.transcript_id = transcript_id
+    def __init__(self, transcript, gene, exon_tuples, strand):
+        self.transcript = transcript
         self.gene = gene
         self.exon_tuples = list(exon_tuples)
         self.strand = strand
@@ -16,33 +17,76 @@ class Transcript(object):
         self.color = ""
 
 
+def open_gtf(gtff):
+    """
+    Open the gtf, using gzip if it's compressed
+    based on extension
+    """
+    return gzip.open(gtff, 'rt') if gtff.endswith('.gz') else open(gtff)
+
+
+def good_record(line, chromosome):
+    '''
+    Filtering on the gtf lines
+    by checking for right chromosome and right feature type
+    '''
+    if line.startswith(chromosome) \
+            and line.split('\t')[2] == 'exon':
+        return True
+    else:
+        return False
+
+
+def get_features(gtfline):
+    """
+    Extract the desirable features from a gtf record
+    """
+    chromosome, _, _, begin, end, _, strand, _, attributes = gtfline.split('\t')
+    gene, transcript = parse_attributes(attributes.rstrip())
+    return [chromosome, int(begin), int(end), strand, gene, transcript]
+
+
+def parse_attributes(attributes):
+    """
+    Parse the attributes string of gtf record
+    Return the values corresponding to gene_name and transcript_id
+    """
+    info = {i.split(' ')[0]: i.split(' ')[1].replace('"', '') for i in attributes.split(
+        '; ') if i.startswith('gene_name') or i.startswith('transcript_id')}
+    return info["gene_name"], info["transcript_id"]
+
+
+def transcripts_in_window(df, window):
+    """
+    Return the transcript names for which
+    either the end or the begin of an exon is within the window
+    """
+    return df.loc[df['begin'].between(window.begin, window.end)
+                  | df['end'].between(window.begin, window.end), 'transcript'] \
+        .unique()
+
+
 def parse_gtf(gtff, window):
     """
-    Parse the gtff using read_gtf and select the relevant region
-    as determined by the window
-
+    Parse the gtff and select the relevant region as determined by the window
+    return as Transcript objects
     """
-    gtf = read_gtf(gtff)
-    columns = ["start", "end", "strand", "transcript_id", "gene_name"]
-    gtf_f = gtf.loc[(gtf["feature"] == "exon") & (gtf["seqname"] == window.chromosome), columns]
-    transcript_slice = (gtf_f.groupby("transcript_id")["start"].max() > window.begin) & (
-        gtf_f.groupby("transcript_id")["end"].min() < window.end)
-    transcripts = transcript_slice[transcript_slice].index
-    region = gtf_f.loc[gtf_f["transcript_id"].isin(transcripts)]
-    transcripts = []
-    for t in transcripts:
-        tr = region.loc[region["transcript_id"] == t]
-        transcripts.append(
-            Transcript(transcript_id=t,
-                       gene=tr["gene_name"].tolist()[0],
-                       exon_tuples=tr.loc[:, ["start", "end"]]
-                                     .sort_values("start")
-                                     .itertuples(index=False, name=None),
+    df = pd.DataFrame(data=[get_features(line)
+                            for line in open_gtf(gtff) if good_record(line, window.chromosome)],
+                      columns=['chromosome', 'begin', 'end', 'strand', 'gene', 'transcript'])
+    res = []
+    for t in transcripts_in_window(df, window):
+        tr = df.loc[df["transcript"] == t]
+        res.append(
+            Transcript(transcript=t,
+                       gene=tr["gene"].tolist()[0],
+                       exon_tuples=tr.loc[:, ["begin", "end"]].sort_values("begin")
+                                                              .itertuples(index=False, name=None),
                        strand=tr["strand"].tolist()[0])
         )
-    sys.stderr.write("Found {} transcripts in the region.\n".format(len(transcripts)))
-    assign_colors_to_genes(transcripts)
-    return transcripts
+    sys.stderr.write("Found {} transcripts in the region.\n".format(len(res)))
+    assign_colors_to_genes(res)
+    return res
 
 
 def assign_colors_to_genes(transcripts):

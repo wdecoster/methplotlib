@@ -1,11 +1,29 @@
 from argparse import ArgumentParser
 import sys
+from math import ceil
 
 
 class Region(object):
     def __init__(self, region):
         self.chromosome, interval = region.replace(',', '').split(':')
         self.begin, self.end = [int(i) for i in interval.split('-')]
+        self.size = self.end - self.begin
+        self.string = "{}_{}_{}".format(self.chromosome, self.begin, self.end)
+
+
+def make_windows(full_window, max_size=1e6):
+    full_reg = Region(full_window)
+    if full_reg.size > max_size:
+        chunks = ceil(full_reg.size / max_size)
+        chunksize = ceil(full_reg.size / chunks)
+        return [
+            Region("{}:{}-{}".format(
+                full_reg.chromosome,
+                full_reg.begin + i * chunksize,
+                full_reg.begin + (i + 1) * chunksize))
+            for i in range(chunks)]
+    else:
+        return [full_reg]
 
 
 def get_args():

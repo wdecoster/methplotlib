@@ -6,12 +6,14 @@ import methplotlib.utils as utils
 
 def main():
     args = utils.get_args()
-    meth_browser(methlist=args.methylation,
-                 names=args.names,
-                 window=utils.Region(args.window),
-                 gtf=args.gtf,
-                 smoothen=args.smooth,
-                 simplify=args.simplify)
+    windows = utils.make_windows(args.window)
+    for window in windows:
+        meth_browser(methlist=args.methylation,
+                     names=args.names,
+                     window=window,
+                     gtf=args.gtf,
+                     smoothen=args.smooth,
+                     simplify=args.simplify)
 
 
 def meth_browser(methlist, names, window, gtf=False, smoothen=5, simplify=False):
@@ -48,10 +50,11 @@ def meth_browser(methlist, names, window, gtf=False, smoothen=5, simplify=False)
     fig["layout"].update(barmode='overlay',
                          title="Methylation frequency",
                          hovermode='closest')
-    with open("methylation_browser.html", 'w') as output:
+    with open("methylation_browser_{}.html".format(window.string), 'w') as output:
         output.write(plotly.offline.plot(fig,
                                          output_type="div",
-                                         show_link=False))
+                                         show_link=False)
+                     )
 
 
 if __name__ == '__main__':

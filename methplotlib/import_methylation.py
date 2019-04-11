@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import sys
 
 
 def read_meth_freq(filename, window, smoothen=5):
@@ -13,13 +14,17 @@ def read_meth_freq(filename, window, smoothen=5):
                       (table.start > window.begin) &
                       (table.end < window.end)]
     table["pos"] = np.floor(table[['start', 'end']].mean(axis=1))
-    return table.drop(columns=['start', 'end', 'num_motifs_in_group',
-                               'called_sites', 'called_sites_methylated', 'group_sequence']) \
-        .sort_values('pos') \
-        .groupby('pos') \
-        .mean() \
-        .rolling(window=smoothen, center=True) \
-        .mean()
+    try:
+        return table.drop(columns=['start', 'end', 'num_motifs_in_group',
+                                   'called_sites', 'called_sites_methylated', 'group_sequence']) \
+            .sort_values('pos') \
+            .groupby('pos') \
+            .mean() \
+            .rolling(window=smoothen, center=True) \
+            .mean()
+    except Exception:
+        sys.stderr.write("ERROR parsing {}\n\n\nDetailed error:\n".format(filename))
+        raise
 
 
 def get_data(methylation_files, window, smoothen):

@@ -42,7 +42,7 @@ def get_args():
     parser.add_argument("-g", "--gtf",
                         help="add annotation based on a gtf file matching to your reference genome")
     parser.add_argument("--simplify",
-                        help="add annotation based on a gtf file matching to your reference genome",
+                        help="simplify annotation track to show genes rather than transcripts",
                         action="store_true")
     parser.add_argument("--split",
                         help="split, rather than overlay the methylation tracks",

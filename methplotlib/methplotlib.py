@@ -13,39 +13,48 @@ def main():
                      window=window,
                      gtf=args.gtf,
                      smoothen=args.smooth,
-                     simplify=args.simplify)
+                     simplify=args.simplify,
+                     split=args.split,
+                     )
 
 
-def meth_browser(methlist, names, window, gtf=False, smoothen=5, simplify=False):
+def meth_browser(methlist, names, window, gtf=False, smoothen=5, simplify=False, split=False):
     """
     methlist is a list of files from calculate_methylation_frequency
     names should have the same length as methlist and contain identifiers for the datasets
     annotation is optional and is a gtf, which will be processed by parse_gtf()
     """
-    fig = tools.make_subplots(rows=5,
+    if split:
+        methrows = len(methlist)
+        layout = [[{}] for i in range(methrows + 1)]
+        annot_axis = 'yaxis{}'.format(methrows + 1)
+    else:
+        methrows = 4
+        layout = [[{'rowspan': methrows}], [None], [None], [None], [{}], ]
+        annot_axis = 'yaxis2'
+    fig = tools.make_subplots(rows=methrows + 1,
                               cols=1,
                               shared_xaxes=True,
-                              specs=[
-                                  [{'rowspan': 4}],
-                                  [None],
-                                  [None],
-                                  [None],
-                                  [{}],
-                              ],
+                              specs=layout,
                               print_grid=False
                               )
-    for meth_trace in plots.methylation(methlist, names, window, smoothen):
-        fig.append_trace(trace=meth_trace, row=1, col=1)
+    if split:
+        for position, meth_trace in enumerate(plots.methylation(methlist, names, window, smoothen),
+                                              start=1):
+            fig.append_trace(trace=meth_trace, row=position, col=1)
+    else:
+        for meth_trace in plots.methylation(methlist, names, window, smoothen):
+            fig.append_trace(trace=meth_trace, row=1, col=1)
     if gtf:
         annotation_traces, y_max = plots.annotation(gtf, window, simplify)
         for annot_trace in annotation_traces:
-            fig.append_trace(trace=annot_trace, row=5, col=1)
-        fig["layout"]["yaxis2"].update(range=[0, y_max],
-                                       showgrid=False,
-                                       zeroline=False,
-                                       showline=False,
-                                       ticks='',
-                                       showticklabels=False)
+            fig.append_trace(trace=annot_trace, row=methrows + 1, col=1)
+        fig["layout"][annot_axis].update(range=[-1, y_max + 1],
+                                         showgrid=False,
+                                         zeroline=False,
+                                         showline=False,
+                                         ticks='',
+                                         showticklabels=False)
         fig["layout"]["xaxis"].update(range=[window.begin, window.end])
     fig["layout"].update(barmode='overlay',
                          title="Methylation frequency",

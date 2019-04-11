@@ -44,6 +44,9 @@ def get_args():
     parser.add_argument("--simplify",
                         help="add annotation based on a gtf file matching to your reference genome",
                         action="store_true")
+    parser.add_argument("--split",
+                        help="split, rather than overlay the methylation tracks",
+                        action="store_true")
     parser.add_argument("--smooth",
                         help="Smoothen the datapoints, but reduce the details",
                         type=int,

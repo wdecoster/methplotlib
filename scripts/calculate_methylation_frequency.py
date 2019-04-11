@@ -78,6 +78,8 @@ print("\t".join(["chromosome", "start", "end", "num_motifs_in_group", "called_si
                  "called_sites_methylated", "methylated_frequency", "group_sequence"]))
 
 sorted_keys = sorted(sites.keys(), key=lambda x: x)
+if len(sorted_keys) == 0:
+    sys.exit("ERROR: No sites found for calculating frequencies!")
 
 for key in sorted_keys:
     if sites[key].called_sites > 0:

@@ -3,14 +3,14 @@ from methplotlib.annotation import parse_gtf
 from methplotlib.import_methylation import get_data
 
 
-def annotation(gtf, window):
+def annotation(gtf, window, simplify=False):
     """
     Return a plotly trace for the annotation
     with a line for the entire gene and triangles for exons,
     indicating direction of transcription
     """
     result = []
-    annotation = parse_gtf(gtf, window)
+    annotation = parse_gtf(gtf, window, simplify)
     for y_pos, transcript in enumerate(annotation):
         line = go.Scatter(x=[max(transcript.begin, window.begin), min(transcript.end, window.end)],
                           y=[y_pos, y_pos],

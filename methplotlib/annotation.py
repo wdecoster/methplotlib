@@ -56,17 +56,17 @@ def parse_attributes(attributes):
     return info["gene_name"], info["transcript_id"]
 
 
-def transcripts_in_window(df, window):
+def transcripts_in_window(df, window, feature='transcript'):
     """
     Return the transcript names for which
     either the end or the begin of an exon is within the window
     """
     return df.loc[df['begin'].between(window.begin, window.end)
-                  | df['end'].between(window.begin, window.end), 'transcript'] \
+                  | df['end'].between(window.begin, window.end), feature] \
         .unique()
 
 
-def parse_gtf(gtff, window):
+def parse_gtf(gtff, window, simplify=False):
     """
     Parse the gtff and select the relevant region as determined by the window
     return as Transcript objects
@@ -74,17 +74,33 @@ def parse_gtf(gtff, window):
     df = pd.DataFrame(data=[get_features(line)
                             for line in open_gtf(gtff) if good_record(line, window.chromosome)],
                       columns=['chromosome', 'begin', 'end', 'strand', 'gene', 'transcript'])
-    res = []
-    for t in transcripts_in_window(df, window):
-        tr = df.loc[df["transcript"] == t]
-        res.append(
-            Transcript(transcript=t,
-                       gene=tr["gene"].tolist()[0],
-                       exon_tuples=tr.loc[:, ["begin", "end"]].sort_values("begin")
-                                                              .itertuples(index=False, name=None),
-                       strand=tr["strand"].tolist()[0])
-        )
-    sys.stderr.write("Found {} transcripts in the region.\n".format(len(res)))
+    if simplify:
+        df.drop_duplicates(subset=['chromosome', 'begin', 'end', 'gene'], inplace=True)
+        res = []
+        for g in transcripts_in_window(df, window, feature='gene'):
+            gtable = df.loc[df["gene"] == g]
+            res.append(
+                Transcript(transcript=gtable["gene"].tolist()[0],
+                           gene=gtable["gene"].tolist()[0],
+                           exon_tuples=gtable.loc[:, ["begin", "end"]].sort_values("begin")
+                           .itertuples(index=False,
+                                       name=None),
+                           strand=gtable["strand"].tolist()[0])
+            )
+        sys.stderr.write("Found {} genes in the region.\n".format(len(res)))
+    else:
+        res = []
+        for t in transcripts_in_window(df, window, feature="transcript"):
+            tr = df.loc[df["transcript"] == t]
+            res.append(
+                Transcript(transcript=t,
+                           gene=tr["gene"].tolist()[0],
+                           exon_tuples=tr.loc[:, ["begin", "end"]].sort_values("begin")
+                                                                  .itertuples(index=False,
+                                                                              name=None),
+                           strand=tr["strand"].tolist()[0])
+            )
+        sys.stderr.write("Found {} transcripts in the region.\n".format(len(res)))
     assign_colors_to_genes(res)
     return res
 

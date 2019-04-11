@@ -23,7 +23,10 @@ def get_args():
                         required=True)
     parser.add_argument("-g", "--gtf",
                         help="add annotation based on a gtf file matching to your reference genome")
-    parser.add_argument("-s", "--smooth",
+    parser.add_argument("--simplify",
+                        help="add annotation based on a gtf file matching to your reference genome",
+                        action="store_true")
+    parser.add_argument("--smooth",
                         help="Smoothen the datapoints, but reduce the details",
                         type=int,
                         default=5)

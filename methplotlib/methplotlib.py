@@ -10,10 +10,11 @@ def main():
                  names=args.names,
                  window=utils.Region(args.window),
                  gtf=args.gtf,
-                 smoothen=args.smooth)
+                 smoothen=args.smooth,
+                 simplify=args.simplify)
 
 
-def meth_browser(methlist, names, window, gtf=False, smoothen=5):
+def meth_browser(methlist, names, window, gtf=False, smoothen=5, simplify=False):
     """
     methlist is a list of files from calculate_methylation_frequency
     names should have the same length as methlist and contain identifiers for the datasets
@@ -34,7 +35,7 @@ def meth_browser(methlist, names, window, gtf=False, smoothen=5):
     for meth_trace in plots.methylation(methlist, names, window, smoothen):
         fig.append_trace(trace=meth_trace, row=1, col=1)
     if gtf:
-        annotation_traces, y_max = plots.annotation(gtf, window)
+        annotation_traces, y_max = plots.annotation(gtf, window, simplify)
         for annot_trace in annotation_traces:
             fig.append_trace(trace=annot_trace, row=5, col=1)
         fig["layout"]["yaxis2"].update(range=[0, y_max],

@@ -31,7 +31,6 @@ setup(
     packages=find_packages(),
     python_requires='>=3',
     install_requires=['plotly>=3.0.0',
-                      'gtfparse>=1.2.0',
                       'numpy>=1.14.3',
                       'pandas>=0.23.4'],
     package_data={'methplotlib': []},

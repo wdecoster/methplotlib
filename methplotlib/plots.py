@@ -11,29 +11,33 @@ def annotation(gtf, window, simplify=False):
     """
     result = []
     annotation = parse_gtf(gtf, window, simplify)
-    for y_pos, transcript in enumerate(annotation):
-        line = go.Scatter(x=[max(transcript.begin, window.begin), min(transcript.end, window.end)],
-                          y=[y_pos, y_pos],
-                          mode='lines',
-                          line=dict(width=2, color=transcript.color),
-                          name=transcript.transcript,
-                          text=transcript.gene,
-                          hoverinfo='text',
-                          showlegend=False)
-        exons = [go.Scatter(x=[begin, end],
-                            y=[y_pos, y_pos],
-                            mode='lines+markers',
-                            line=dict(width=8, color=transcript.color),
-                            name=transcript.transcript,
-                            text=transcript.gene,
-                            hoverinfo='text',
-                            showlegend=False,
-                            marker=dict(symbol=transcript.marker,
-                                        size=8))
-                 for begin, end in transcript.exon_tuples
-                 if window.begin < begin and window.end > end]
-        result.extend([line, *exons])
-    return result, y_pos
+    if annotation:
+        for y_pos, transcript in enumerate(annotation):
+            line = go.Scatter(x=[max(transcript.begin, window.begin),
+                                 min(transcript.end, window.end)],
+                              y=[y_pos, y_pos],
+                              mode='lines',
+                              line=dict(width=2, color=transcript.color),
+                              name=transcript.transcript,
+                              text=transcript.gene,
+                              hoverinfo='text',
+                              showlegend=False)
+            exons = [go.Scatter(x=[begin, end],
+                                y=[y_pos, y_pos],
+                                mode='lines+markers',
+                                line=dict(width=8, color=transcript.color),
+                                name=transcript.transcript,
+                                text=transcript.gene,
+                                hoverinfo='text',
+                                showlegend=False,
+                                marker=dict(symbol=transcript.marker,
+                                            size=8))
+                     for begin, end in transcript.exon_tuples
+                     if window.begin < begin and window.end > end]
+            result.extend([line, *exons])
+        return result, y_pos
+    else:
+        return result, 0
 
 
 def methylation(methylation_files, names, window, smoothen):

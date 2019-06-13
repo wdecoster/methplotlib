@@ -45,6 +45,7 @@ def meth_browser(methlist, names, window, gtf=False, smoothen=5, simplify=False,
     else:
         for meth_trace in plots.methylation(methlist, names, window, smoothen):
             fig.append_trace(trace=meth_trace, row=1, col=1)
+    fig["layout"]["xaxis"].update(tickformat='g', separatethousands=True)
     if gtf:
         annotation_traces, y_max = plots.annotation(gtf, window, simplify)
         for annot_trace in annotation_traces:

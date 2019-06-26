@@ -3,25 +3,45 @@ import numpy as np
 import sys
 
 
-def read_meth_freq(filename, window, smoothen=5):
+class Methylation(object):
+    def __init__(self, traces, data_type):
+        self.table = traces
+        self.data_type = data_type
+
+
+def read_meth(filename, window, smoothen=5):
     """
-    converts a file from calculate_methylation_frequency to a pandas dataframe
-    containing 'chromosome', 'pos', 'methylated_frequency'
+    converts a file from nanopolish to a pandas dataframe
+    input can be from calculate_methylation_frequency
+    which will return a dataframe with 'chromosome', 'pos', 'methylated_frequency'
     smoothening the result by a rolling average
+
+    input can also be raw data per read
+    which will return a dataframe with 'read', 'chromosome', 'pos', 'log_lik_ratio', 'strand'
     """
-    table = pd.read_csv(filename, sep="\t")
-    table = table.loc[(table.chromosome == window.chromosome) &
-                      (table.start > window.begin) &
-                      (table.end < window.end)]
-    table["pos"] = np.floor(table[['start', 'end']].mean(axis=1))
     try:
-        return table.drop(columns=['start', 'end', 'num_motifs_in_group',
-                                   'called_sites', 'called_sites_methylated', 'group_sequence']) \
-            .sort_values('pos') \
-            .groupby('pos') \
-            .mean() \
-            .rolling(window=smoothen, center=True) \
-            .mean()
+        table = pd.read_csv(filename, sep="\t")
+        table["pos"] = np.floor(table[['start', 'end']].mean(axis=1)).astype('i8')
+        table = table.loc[(table["chromosome"] == window.chromosome)
+                          & table["pos"].between(window.begin, window.end)]
+        if 'log_lik_ratio' in table:  # indicating the file is 'raw'
+            return Methylation(
+                table=table.drop(columns=['start', 'end', 'log_lik_methylated',
+                                          'log_lik_unmethylated', 'num_calling_strands',
+                                          'num_motifs', 'sequence'])
+                .sort_values(['read_name', 'pos']),
+                data_type="raw")
+        else:  # assuming the file is from calculate_methylation_frequency
+            return Methylation(
+                table=table.drop(columns=['start', 'end', 'num_motifs_in_group',
+                                          'called_sites', 'called_sites_methylated',
+                                          'group_sequence'])
+                .sort_values('pos')
+                .groupby('pos')
+                .mean()
+                .rolling(window=smoothen, center=True)
+                .mean(),
+                data_type="frequency")
     except Exception:
         sys.stderr.write("ERROR parsing {}\n\n\nDetailed error:\n".format(filename))
         raise
@@ -29,8 +49,11 @@ def read_meth_freq(filename, window, smoothen=5):
 
 def get_data(methylation_files, window, smoothen):
     """
-    Import methylation frequency from all files in the list methylation_files
-    within the window args.window
-    passing a smoothen parameter
+    Import methylation data from all files in the list methylation_files
+
+    Data can be either frequency or raw.
+
+    data is extracted within the window args.window
+    Frequencies are smoothened using a sliding window
     """
-    return [read_meth_freq(f, window, smoothen) for f in methylation_files]
+    return [read_meth(f, window, smoothen) for f in methylation_files]

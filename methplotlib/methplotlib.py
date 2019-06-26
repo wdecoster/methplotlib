@@ -30,7 +30,8 @@ def meth_browser(methlist, names, window, gtf=False, smoothen=5, simplify=False,
      then 4/5 of the browser is used for overlayed samples and one for annotation
     the trace to be used for annotation is thus methrows + 1
     """
-    if split:
+    data = plots.methylation(methlist, names, window, smoothen)
+    if split or data.split:
         methrows = len(methlist)
         annot_axis = 'yaxis{}'.format(methrows + 1)
         fig = tools.make_subplots(rows=methrows + 1,
@@ -39,9 +40,9 @@ def meth_browser(methlist, names, window, gtf=False, smoothen=5, simplify=False,
                                   specs=[[{}] for i in range(methrows + 1)],
                                   print_grid=False
                                   )
-        for position, meth_trace in enumerate(plots.methylation(methlist, names, window, smoothen),
-                                              start=1):
-            fig.append_trace(trace=meth_trace, row=position, col=1)
+        for position, sample_traces in enumerate(data.traces, start=1):
+            for meth_trace in sample_traces:
+                fig.append_trace(trace=meth_trace, row=position, col=1)
     else:
         methrows = 4
         annot_axis = 'yaxis2'
@@ -51,8 +52,8 @@ def meth_browser(methlist, names, window, gtf=False, smoothen=5, simplify=False,
                                   specs=[[{'rowspan': methrows}], [None], [None], [None], [{}], ],
                                   print_grid=False
                                   )
-        for meth_trace in plots.methylation(methlist, names, window, smoothen):
-            fig.append_trace(trace=meth_trace, row=1, col=1)
+        for meth_trace in data.traces:
+            fig.append_trace(trace=meth_trace[0], row=1, col=1)
     fig["layout"]["xaxis"].update(tickformat='g', separatethousands=True)
     if gtf:
         annotation_traces, y_max = plots.annotation(gtf, window, simplify)
@@ -66,7 +67,7 @@ def meth_browser(methlist, names, window, gtf=False, smoothen=5, simplify=False,
                                          showticklabels=False)
         fig["layout"]["xaxis"].update(range=[window.begin, window.end])
     fig["layout"].update(barmode='overlay',
-                         title="Methylation frequency",
+                         title="Nucleotide modifications",
                          hovermode='closest')
     with open("methylation_browser_{}.html".format(window.string), 'w') as output:
         output.write(plotly.offline.plot(fig,

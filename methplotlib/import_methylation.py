@@ -4,8 +4,8 @@ import sys
 
 
 class Methylation(object):
-    def __init__(self, traces, data_type):
-        self.table = traces
+    def __init__(self, table, data_type):
+        self.table = table
         self.data_type = data_type
 
 

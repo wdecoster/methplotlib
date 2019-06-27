@@ -27,10 +27,10 @@ def make_windows(full_window, max_size=1e6):
 
 
 def get_args():
-    parser = ArgumentParser(description="plotting methylation frequency")
+    parser = ArgumentParser(description="plotting nanopolish methylation calls or frequency")
     parser.add_argument("-m", "--methylation",
                         nargs='+',
-                        help="output of calculate_methylation_frequency.py",
+                        help="nanopolish methylation calls or frequency output",
                         required=True)
     parser.add_argument("-n", "--names",
                         nargs='+',

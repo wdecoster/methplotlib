@@ -50,7 +50,7 @@ def read_meth(filename, name, window, smoothen=5):
         raise
 
 
-def get_data(methylation_files, names, window, smoothen):
+def get_data(methylation_files, names, window, smoothen=5):
     """
     Import methylation data from all files in the list methylation_files
 

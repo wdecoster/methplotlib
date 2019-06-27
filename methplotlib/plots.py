@@ -82,6 +82,7 @@ def methylation(meth_data):
 
 
 def per_read_traces(table):
+    """Make traces for each read"""
     minmax_table = min_and_max_pos(table)
     y_pos_dict = assign_y_pos(minmax_table)
     ratio_cap = min(abs(table["log_lik_ratio"].min()), abs(table["log_lik_ratio"].max()))
@@ -99,6 +100,7 @@ def per_read_traces(table):
 
 
 def min_and_max_pos(table):
+    """Return a table with for every read the minimum and maximum position"""
     return table.loc[:, ["read_name", "pos"]] \
         .groupby('read_name') \
         .min() \
@@ -135,6 +137,8 @@ def assign_y_pos(df):
 
 
 def read_line_trace(read_range, y_pos, strand):
+    """Make a grey line trace for a single read,
+    with black arrow symbols on the edges indicating strand"""
     symbol = "triangle-right" if strand == "+" else "triangle-left"
     return go.Scatter(x=[read_range['posmin'], read_range['posmax']],
                       y=[y_pos, y_pos],
@@ -147,6 +151,8 @@ def read_line_trace(read_range, y_pos, strand):
 
 
 def position_likelihood_trace(read_table, y_pos, minratio, maxratio):
+    """Make dots trace per read indicating (with RdBu) colorscale the
+    log likelihood of having methylation here"""
     return go.Scatter(x=read_table['pos'],
                       y=[y_pos] * len(read_table),
                       mode='markers',

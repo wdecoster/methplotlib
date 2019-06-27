@@ -70,8 +70,8 @@ def methylation(meth_data):
     traces = []
     split = False
     for meth in meth_data:
-        if meth.data_type == 'raw':
-            traces.append(per_read_traces(meth.table))
+        if meth.data_type in ['raw', 'phased']:
+            traces.append(per_read_traces(meth.table, phased=meth.data_type == 'phased'))
             split = True
         else:
             traces.append([go.Scatter(x=meth.table.index, y=meth.table["methylated_frequency"],
@@ -81,17 +81,22 @@ def methylation(meth_data):
     return DataTraces(traces=traces, split=split)
 
 
-def per_read_traces(table):
+def per_read_traces(table, phased=False):
     """Make traces for each read"""
-    minmax_table = min_and_max_pos(table)
-    y_pos_dict = assign_y_pos(minmax_table)
+    minmax_table = min_and_max_pos(table, phased=phased)
+    y_pos_dict = assign_y_pos(minmax_table, phased=phased)
     ratio_cap = min(abs(table["log_lik_ratio"].min()), abs(table["log_lik_ratio"].max()))
     traces = []
     for read in table["read_name"].unique():
-        strand = table.loc[table["read_name"] == read, "strand"].unique()[0]
+        strand = table.loc[table["read_name"] == read, "strand"].values[0]
+        if phased:
+            phase = table.loc[table["read_name"] == read, "HP"].values[0]
+        else:
+            phase = None
         traces.append(read_line_trace(read_range=minmax_table.loc[read],
                                       y_pos=y_pos_dict[read],
-                                      strand=strand))
+                                      strand=strand,
+                                      phase=phase))
         traces.append(position_likelihood_trace(read_table=table.loc[table["read_name"] == read],
                                                 y_pos=y_pos_dict[read],
                                                 minratio=-ratio_cap,
@@ -99,31 +104,42 @@ def per_read_traces(table):
     return traces
 
 
-def min_and_max_pos(table):
+def min_and_max_pos(table, phased):
     """Return a table with for every read the minimum and maximum position"""
-    return table.loc[:, ["read_name", "pos"]] \
+    mm_table = table.loc[:, ["read_name", "pos"]] \
         .groupby('read_name') \
         .min() \
         .join(table.loc[:, ["read_name", "pos"]]
               .groupby('read_name')
               .max(),
               lsuffix="min",
-              rsuffix="max") \
-        .sort_values(by=['posmin', 'posmax'],
-                     ascending=[True, False])
+              rsuffix="max")
+    if phased:
+        return mm_table.join(table.loc[:, ["read_name", "HP"]]
+                             .drop_duplicates(subset='read_name')
+                             .set_index('read_name'))
+    else:
+        return mm_table
 
 
-def assign_y_pos(df):
+def assign_y_pos(df, phased=False):
     """Assign height of the read in the per read traces
 
     Gets a dataframe of read_name, posmin and posmax.
+    Sorting by position, and optionally by phase block.
     Determines optimal height (y coordinate) for this read
 
     Returns a dictionary mapping read_name to y_coord
     """
+    if phased:
+        dfs = df.sort_values(by=['HP', 'posmin', 'posmax'],
+                             ascending=[True, True, False])
+    else:
+        dfs = df.sort_values(by=['posmin', 'posmax'],
+                             ascending=[True, False])
     heights = [[] for i in range(100)]
     y_pos = dict()
-    for read in df.itertuples():
+    for read in dfs.itertuples():
         for y, layer in enumerate(heights, start=1):
             if len(layer) == 0:
                 layer.append(read.posmax)
@@ -136,18 +152,29 @@ def assign_y_pos(df):
     return y_pos
 
 
-def read_line_trace(read_range, y_pos, strand):
+def read_line_trace(read_range, y_pos, strand, phase=None):
     """Make a grey line trace for a single read,
     with black arrow symbols on the edges indicating strand"""
     symbol = "triangle-right" if strand == "+" else "triangle-left"
+    if phase:
+        if phase == 1:
+            color = 'lightgreen'
+        elif phase == 2:
+            color = 'yellow'
+        else:  # phase is np.nan
+            color = 'black'
+    else:
+        color = 'black'
     return go.Scatter(x=[read_range['posmin'], read_range['posmax']],
                       y=[y_pos, y_pos],
                       mode='lines+markers',
-                      line=dict(width=1, color='grey'),
+                      line=dict(width=1, color='lightgrey'),
                       showlegend=False,
                       marker=dict(symbol=symbol,
                                   size=8,
-                                  color='black'))
+                                  color=color,
+                                  line=dict(width=0.5,
+                                            color='black')))
 
 
 def position_likelihood_trace(read_table, y_pos, minratio, maxratio):

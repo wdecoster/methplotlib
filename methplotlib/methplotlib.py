@@ -2,23 +2,23 @@ import plotly
 from plotly import tools
 import methplotlib.plots as plots
 import methplotlib.utils as utils
+from methplotlib.import_methylation import get_data
 
 
 def main():
     args = utils.get_args()
     windows = utils.make_windows(args.window)
     for window in windows:
-        meth_browser(methlist=args.methylation,
-                     names=args.names,
+        meth_data = get_data(args.methylation, args.names, window, args.smooth)
+        meth_browser(meth_data=meth_data,
                      window=window,
                      gtf=args.gtf,
-                     smoothen=args.smooth,
                      simplify=args.simplify,
                      split=args.split,
                      )
 
 
-def meth_browser(methlist, names, window, gtf=False, smoothen=5, simplify=False, split=False):
+def meth_browser(meth_data, window, gtf=False, simplify=False, split=False):
     """
     methlist is a list of files from calculate_methylation_frequency
     names should have the same length as methlist and contain identifiers for the datasets
@@ -30,9 +30,9 @@ def meth_browser(methlist, names, window, gtf=False, smoothen=5, simplify=False,
      then 4/5 of the browser is used for overlayed samples and one for annotation
     the trace to be used for annotation is thus methrows + 1
     """
-    data = plots.methylation(methlist, names, window, smoothen)
+    data = plots.methylation(meth_data)
     if split or data.split:
-        methrows = len(methlist)
+        methrows = len(meth_data)
         annot_axis = 'yaxis{}'.format(methrows + 1)
         fig = tools.make_subplots(rows=methrows + 1,
                                   cols=1,

@@ -1,6 +1,5 @@
 import plotly.graph_objs as go
 from methplotlib.annotation import parse_gtf
-from methplotlib.import_methylation import get_data
 
 
 class DataTraces(object):
@@ -62,7 +61,7 @@ def exon_arrow_trace(transcript, begin, end, y_pos):
                                   size=8))
 
 
-def methylation(methylation_files, names, window, smoothen):
+def methylation(meth_data):
     """
     Call function get_data to parse files from nanopolish,
      either the methylation calls (raw) or those from calculate_methylation_frequency
@@ -70,14 +69,14 @@ def methylation(methylation_files, names, window, smoothen):
     """
     traces = []
     split = False
-    for meth, name in zip(get_data(methylation_files, window, smoothen), names):
+    for meth in meth_data:
         if meth.data_type == 'raw':
             traces.append(per_read_traces(meth.table))
             split = True
         else:
             traces.append([go.Scatter(x=meth.table.index, y=meth.table["methylated_frequency"],
                                       mode='lines',
-                                      name=name,
+                                      name=meth.name,
                                       hoverinfo='name')])
     return DataTraces(traces=traces, split=split)
 

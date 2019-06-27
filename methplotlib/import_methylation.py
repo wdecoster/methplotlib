@@ -4,12 +4,13 @@ import sys
 
 
 class Methylation(object):
-    def __init__(self, table, data_type):
+    def __init__(self, table, data_type, name):
         self.table = table
         self.data_type = data_type
+        self.name = name
 
 
-def read_meth(filename, window, smoothen=5):
+def read_meth(filename, name, window, smoothen=5):
     """
     converts a file from nanopolish to a pandas dataframe
     input can be from calculate_methylation_frequency
@@ -30,7 +31,8 @@ def read_meth(filename, window, smoothen=5):
                                           'log_lik_unmethylated', 'num_calling_strands',
                                           'num_motifs', 'sequence'])
                 .sort_values(['read_name', 'pos']),
-                data_type="raw")
+                data_type="raw",
+                name=name)
         else:  # assuming the file is from calculate_methylation_frequency
             return Methylation(
                 table=table.drop(columns=['start', 'end', 'num_motifs_in_group',
@@ -41,13 +43,14 @@ def read_meth(filename, window, smoothen=5):
                 .mean()
                 .rolling(window=smoothen, center=True)
                 .mean(),
-                data_type="frequency")
+                data_type="frequency",
+                name=name)
     except Exception:
         sys.stderr.write("ERROR parsing {}\n\n\nDetailed error:\n".format(filename))
         raise
 
 
-def get_data(methylation_files, window, smoothen):
+def get_data(methylation_files, names, window, smoothen):
     """
     Import methylation data from all files in the list methylation_files
 
@@ -56,4 +59,4 @@ def get_data(methylation_files, window, smoothen):
     data is extracted within the window args.window
     Frequencies are smoothened using a sliding window
     """
-    return [read_meth(f, window, smoothen) for f in methylation_files]
+    return [read_meth(f, n, window, smoothen) for f, n in zip(methylation_files, names)]

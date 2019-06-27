@@ -23,15 +23,19 @@ def read_meth(filename, name, window, smoothen=5):
     try:
         table = pd.read_csv(filename, sep="\t")
         table["pos"] = np.floor(table[['start', 'end']].mean(axis=1)).astype('i8')
-        table = table.loc[(table["chromosome"] == window.chromosome)
-                          & table["pos"].between(window.begin, window.end)]
+        table = table.loc[(table["chromosome"] == window.chromosome) &
+                          table["pos"].between(window.begin, window.end)]
         if 'log_lik_ratio' in table:  # indicating the file is 'raw'
+            if 'PS' in table:  # indicating the file contains phased calls
+                data_type = 'phased'
+            else:
+                data_type = 'raw'
             return Methylation(
                 table=table.drop(columns=['start', 'end', 'log_lik_methylated',
                                           'log_lik_unmethylated', 'num_calling_strands',
                                           'num_motifs', 'sequence'])
                 .sort_values(['read_name', 'pos']),
-                data_type="raw",
+                data_type=data_type,
                 name=name)
         else:  # assuming the file is from calculate_methylation_frequency
             return Methylation(

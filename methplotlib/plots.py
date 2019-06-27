@@ -163,3 +163,40 @@ def position_likelihood_trace(read_table, y_pos, minratio, maxratio):
                                   cmax=maxratio,
                                   colorscale='RdBu',
                                   showscale=True))
+
+
+def splom(meth_data):
+    data = [m.table.rename({"methylated_frequency": m.name}, axis='columns')
+            for m in meth_data if m.data_type == "frequency"]
+    labels = [m.name for m in meth_data if m.data_type == "frequency"]
+    full = data[0].join(data[1:])
+    trace = go.Splom(dimensions=[dict(label=l, values=full[l]) for l in labels],
+                     marker=dict(size=4,
+                                 line=dict(width=0.5,
+                                           color='rgb(230,230,230)'))
+                     )
+    trace['diagonal'].update(visible=False)
+    axis = dict(showline=True,
+                zeroline=False,
+                gridcolor='#fff',
+                ticklen=4)
+
+    layout = go.Layout(
+        title='Correlation of methylation frequency',
+        dragmode='select',
+        width=1200,
+        height=1200,
+        autosize=False,
+        hovermode='closest',
+        plot_bgcolor='rgba(240,240,240, 0.95)',
+        xaxis1=dict(axis),
+        xaxis2=dict(axis),
+        xaxis3=dict(axis),
+        xaxis4=dict(axis),
+        yaxis1=dict(axis),
+        yaxis2=dict(axis),
+        yaxis3=dict(axis),
+        yaxis4=dict(axis)
+    )
+
+    return dict(data=[trace], layout=layout)

@@ -10,6 +10,7 @@ def main():
     windows = utils.make_windows(args.window)
     for window in windows:
         meth_data = get_data(args.methylation, args.names, window, args.smooth)
+        correlation_plot(meth_data, window)
         meth_browser(meth_data=meth_data,
                      window=window,
                      gtf=args.gtf,
@@ -74,6 +75,18 @@ def meth_browser(meth_data, window, gtf=False, simplify=False, split=False):
                                          output_type="div",
                                          show_link=False)
                      )
+
+
+def correlation_plot(meth_data, window):
+    data = [m for m in meth_data if m.data_type == "frequency"]
+    if len(data) < 2:
+        return
+    else:
+        with open("methylation_frequency_correlation_{}.html".format(window.string), 'w') as output:
+            output.write(plotly.offline.plot(plots.splom(meth_data),
+                                             output_type="div",
+                                             show_link=False)
+                         )
 
 
 if __name__ == '__main__':

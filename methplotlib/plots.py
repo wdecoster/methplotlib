@@ -1,5 +1,6 @@
 import plotly.graph_objs as go
 from methplotlib.annotation import parse_gtf
+import sys
 
 
 class DataTraces(object):
@@ -100,24 +101,35 @@ def methylation(meth_data):
 
 def per_read_traces(table, phased=False):
     """Make traces for each read"""
+    max_coverage = 100
     minmax_table = min_and_max_pos(table, phased=phased)
-    y_pos_dict = assign_y_pos(minmax_table, phased=phased)
+    y_pos_dict = assign_y_pos(minmax_table, phased=phased, max_coverage=max_coverage)
     ratio_cap = min(abs(table["log_lik_ratio"].min()), abs(table["log_lik_ratio"].max()))
     traces = []
+    hidden_reads = 0
     for read in table["read_name"].unique():
         strand = table.loc[table["read_name"] == read, "strand"].values[0]
         if phased:
             phase = table.loc[table["read_name"] == read, "HP"].values[0]
         else:
             phase = None
-        traces.append(read_line_trace(read_range=minmax_table.loc[read],
-                                      y_pos=y_pos_dict[read],
-                                      strand=strand,
-                                      phase=phase))
-        traces.append(position_likelihood_trace(read_table=table.loc[table["read_name"] == read],
-                                                y_pos=y_pos_dict[read],
-                                                minratio=-ratio_cap,
-                                                maxratio=ratio_cap))
+        try:
+            traces.append(
+                read_line_trace(read_range=minmax_table.loc[read],
+                                y_pos=y_pos_dict[read],
+                                strand=strand,
+                                phase=phase))
+            traces.append(
+                position_likelihood_trace(read_table=table.loc[table["read_name"] == read],
+                                          y_pos=y_pos_dict[read],
+                                          minratio=-ratio_cap,
+                                          maxratio=ratio_cap))
+        except KeyError:
+            hidden_reads += 1
+            continue
+    if hidden_reads:
+        sys.stderr.write("Warning: hiding {} reads because coverage above {}x.\n".format(
+            hidden_reads, max_coverage))
     return traces
 
 
@@ -139,7 +151,7 @@ def min_and_max_pos(table, phased):
         return mm_table
 
 
-def assign_y_pos(df, phased=False):
+def assign_y_pos(df, phased=False, max_coverage=100):
     """Assign height of the read in the per read traces
 
     Gets a dataframe of read_name, posmin and posmax.
@@ -154,7 +166,7 @@ def assign_y_pos(df, phased=False):
     else:
         dfs = df.sort_values(by=['posmin', 'posmax'],
                              ascending=[True, False])
-    heights = [[] for i in range(100)]
+    heights = [[] for i in range(max_coverage)]
     y_pos = dict()
     for read in dfs.itertuples():
         for y, layer in enumerate(heights, start=1):

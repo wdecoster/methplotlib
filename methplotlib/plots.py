@@ -206,7 +206,7 @@ def position_likelihood_trace(read_table, y_pos, minratio, maxratio):
                                   cmin=minratio,
                                   cmax=maxratio,
                                   colorscale='RdBu',
-                                  showscale=True))
+                                  showscale=False))
 
 
 def splom(meth_data):

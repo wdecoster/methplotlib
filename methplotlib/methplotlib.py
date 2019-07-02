@@ -39,11 +39,19 @@ def meth_browser(meth_data, window, gtf=False, simplify=False, split=False):
                                   cols=1,
                                   shared_xaxes=True,
                                   specs=[[{}] for i in range(methrows + 1)],
-                                  print_grid=False
+                                  print_grid=False,
+                                  subplot_titles=data.names
                                   )
-        for position, sample_traces in enumerate(data.traces, start=1):
+        for position, (sample_traces, sample_type) in enumerate(data, start=1):
             for meth_trace in sample_traces:
                 fig.append_trace(trace=meth_trace, row=position, col=1)
+            if sample_type == 'frequency':
+                fig["layout"]["yaxis{}".format(position)].update(
+                    title='Modified frequency')
+            else:
+                fig["layout"]["yaxis{}".format(position)].update(
+                    title='Modification likelihood')
+        fig["layout"].update(showlegend=False)
     else:
         methrows = 4
         annot_axis = 'yaxis2'
@@ -53,8 +61,10 @@ def meth_browser(meth_data, window, gtf=False, simplify=False, split=False):
                                   specs=[[{'rowspan': methrows}], [None], [None], [None], [{}], ],
                                   print_grid=False
                                   )
+        fig["layout"]['yaxis'].update(title='Modified frequency')
         for meth_trace in data.traces:
             fig.append_trace(trace=meth_trace[0], row=1, col=1)
+        fig["layout"].update(legend=dict(orientation='h'))
     fig["layout"]["xaxis"].update(tickformat='g', separatethousands=True)
     if gtf:
         annotation_traces, y_max = plots.annotation(gtf, window, simplify)
@@ -69,13 +79,9 @@ def meth_browser(meth_data, window, gtf=False, simplify=False, split=False):
         fig["layout"]["xaxis"].update(range=[window.begin, window.end])
     fig["layout"].update(barmode='overlay',
                          title="Nucleotide modifications",
-                         hovermode='closest',
-                         legend=dict(orientation='h'))
+                         hovermode='closest')
     with open("methylation_browser_{}.html".format(window.string), 'w') as output:
-        output.write(plotly.offline.plot(fig,
-                                         output_type="div",
-                                         show_link=False)
-                     )
+        output.write(plotly.offline.plot(fig, output_type="div", show_link=False))
 
 
 def correlation_plot(meth_data, window):

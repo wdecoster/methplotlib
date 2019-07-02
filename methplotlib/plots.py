@@ -3,9 +3,22 @@ from methplotlib.annotation import parse_gtf
 
 
 class DataTraces(object):
-    def __init__(self, traces, split):
+    def __init__(self, traces, types, names, split):
         self.traces = traces
+        self.types = types
+        self.names = names
         self.split = split
+        self.index = 0
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        if self.index == len(self.traces):
+            raise StopIteration
+        else:
+            self.index += 1
+            return self.traces[self.index - 1], self.types[self.index - 1]
 
 
 def annotation(gtf, window, simplify=False):
@@ -68,6 +81,8 @@ def methylation(meth_data):
     Return per dataset a list of one (if frequency) or lots of (if raw) plotly traces
     """
     traces = []
+    types = []
+    names = []
     split = False
     for meth in meth_data:
         if meth.data_type in ['raw', 'phased']:
@@ -78,7 +93,9 @@ def methylation(meth_data):
                                       mode='lines',
                                       name=meth.name,
                                       hoverinfo='name')])
-    return DataTraces(traces=traces, split=split)
+        types.append(meth.data_type)
+        names.append(meth.name)
+    return DataTraces(traces=traces, types=types, names=names, split=split)
 
 
 def per_read_traces(table, phased=False):

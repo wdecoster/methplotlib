@@ -69,7 +69,8 @@ def meth_browser(meth_data, window, gtf=False, simplify=False, split=False):
         fig["layout"]["xaxis"].update(range=[window.begin, window.end])
     fig["layout"].update(barmode='overlay',
                          title="Nucleotide modifications",
-                         hovermode='closest')
+                         hovermode='closest',
+                         legend=dict(orientation='h'))
     with open("methylation_browser_{}.html".format(window.string), 'w') as output:
         output.write(plotly.offline.plot(fig,
                                          output_type="div",

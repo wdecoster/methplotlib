@@ -230,7 +230,7 @@ def splom(meth_data):
         hovermode=False,
         plot_bgcolor='rgba(240,240,240, 0.95)')
 
-    for i in len(data):
+    for i in range(1, len(data) + 1):
         layout["xaxis{}".format(i)] = dict(
             showline=True, zeroline=False, gridcolor='#fff', ticklen=4)
         layout["yaxis{}".format(i)] = dict(

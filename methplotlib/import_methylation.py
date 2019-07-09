@@ -23,8 +23,8 @@ def read_meth(filename, name, window, smoothen=5):
     try:
         table = pd.read_csv(filename, sep="\t")
         table["pos"] = np.floor(table[['start', 'end']].mean(axis=1)).astype('i8')
-        table = table.loc[(table["chromosome"] == window.chromosome) &
-                          table["pos"].between(window.begin, window.end)]
+        table = table.loc[(table["chromosome"] == window.chromosome)
+                          & table["pos"].between(window.begin, window.end)]
         if 'log_lik_ratio' in table:  # indicating the file is 'raw'
             if 'PS' in table:  # indicating the file contains phased calls
                 data_type = 'phased'
@@ -50,7 +50,8 @@ def read_meth(filename, name, window, smoothen=5):
                 data_type="frequency",
                 name=name)
     except Exception:
-        sys.stderr.write("ERROR parsing {}\n\n\nDetailed error:\n".format(filename))
+        sys.stderr.write("\n\n\nInput file {} not recognized!\n".format(filename))
+        sys.stderr.write("\n\n\nDetailed error:\n")
         raise
 
 

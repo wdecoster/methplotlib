@@ -8,7 +8,7 @@ def main():
     calls = pd.read_csv(args.methylation, sep="\t")
     calls['PS'] = None
     calls['HP'] = None
-    for read in pysam.AlignmentFile("haplotagged.bam").fetch():
+    for read in pysam.AlignmentFile(args.bam).fetch():
         if read.has_tag('PS'):
             calls.loc[calls['read_name'] == read.query_name, ["PS", "HP"]] = (
                 read.get_tag('PS'), read.get_tag('HP'))

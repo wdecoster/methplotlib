@@ -7,6 +7,7 @@
 import sys
 import csv
 import argparse
+import gzip
 
 
 class SiteStats:
@@ -38,7 +39,10 @@ assert(args.call_threshold is not None)
 sites = dict()
 
 if args.input:
-    in_fh = open(args.input)
+    if args.input.endswith(".gz"):
+        in_fh = gzip.open(args.input, 'rt')
+    else:
+        in_fh = open(args.input)
 else:
     in_fh = sys.stdin
 csv_reader = csv.DictReader(in_fh, delimiter='\t')

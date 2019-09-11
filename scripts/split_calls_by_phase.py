@@ -5,14 +5,14 @@ import pandas as pd
 
 def main():
     args = get_args()
-    calls = pd.read_csv(args.methylation, sep="\t")
     phase_info = pd.DataFrame(
         data=[(read.query_name, read.get_tag('PS'), read.get_tag('HP'))
               for read in pysam.AlignmentFile(args.bam).fetch() if read.has_tag('PS')],
         columns=['read_name', 'PS', 'HP']) \
         .set_index('read_name')
-    print(calls.join(phase_info, by='read_name')
-               .to_csv(path_or_buf=None, sep="\t", na_rep="NaN", index=False))
+    print(pd.read_csv(args.methylation, sep="\t")
+          .join(phase_info, on='read_name')
+          .to_csv(path_or_buf=None, sep="\t", na_rep="NaN", index=False))
 
 
 def get_args():

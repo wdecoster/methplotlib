@@ -53,7 +53,7 @@ def parse_attributes(attributes):
     """
     info = {i.split(' ')[0]: i.split(' ')[1].replace('"', '') for i in attributes.split(
         '; ') if i.startswith('gene_name') or i.startswith('transcript_id')}
-    return info["gene_name"], info["transcript_id"]
+    return info.get("gene_name"), info.get("transcript_id")
 
 
 def transcripts_in_window(df, window, feature='transcript'):
@@ -79,14 +79,15 @@ def parse_gtf(gtff, window, simplify=False):
         res = []
         for g in transcripts_in_window(df, window, feature='gene'):
             gtable = df.loc[df["gene"] == g]
-            res.append(
-                Transcript(transcript=gtable["gene"].tolist()[0],
-                           gene=gtable["gene"].tolist()[0],
-                           exon_tuples=gtable.loc[:, ["begin", "end"]].sort_values("begin")
-                           .itertuples(index=False,
-                                       name=None),
-                           strand=gtable["strand"].tolist()[0])
-            )
+            if len(gtable):
+                res.append(
+                    Transcript(transcript=gtable["gene"].tolist()[0],
+                               gene=gtable["gene"].tolist()[0],
+                               exon_tuples=gtable.loc[:, ["begin", "end"]].sort_values("begin")
+                               .itertuples(index=False,
+                                           name=None),
+                               strand=gtable["strand"].tolist()[0])
+                )
         sys.stderr.write("Found {} genes in the region.\n".format(len(res)))
     else:
         res = []

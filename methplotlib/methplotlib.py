@@ -1,5 +1,4 @@
 import plotly
-from plotly import tools
 import methplotlib.plots as plots
 import methplotlib.utils as utils
 from methplotlib.import_methylation import get_data
@@ -35,13 +34,13 @@ def meth_browser(meth_data, window, gtf=False, simplify=False, split=False):
     if split or data.split:
         methrows = len(meth_data)
         annot_axis = 'yaxis{}'.format(methrows + 1)
-        fig = tools.make_subplots(rows=methrows + 1,
-                                  cols=1,
-                                  shared_xaxes=True,
-                                  specs=[[{}] for i in range(methrows + 1)],
-                                  print_grid=False,
-                                  subplot_titles=data.names
-                                  )
+        fig = plotly.subplots.make_subplots(rows=methrows + 1,
+                                            cols=1,
+                                            shared_xaxes=True,
+                                            specs=[[{}] for i in range(methrows + 1)],
+                                            print_grid=False,
+                                            subplot_titles=data.names
+                                            )
         for position, (sample_traces, sample_type) in enumerate(data, start=1):
             for meth_trace in sample_traces:
                 fig.append_trace(trace=meth_trace, row=position, col=1)
@@ -55,12 +54,13 @@ def meth_browser(meth_data, window, gtf=False, simplify=False, split=False):
     else:
         methrows = 4
         annot_axis = 'yaxis2'
-        fig = tools.make_subplots(rows=methrows + 1,
-                                  cols=1,
-                                  shared_xaxes=True,
-                                  specs=[[{'rowspan': methrows}], [None], [None], [None], [{}], ],
-                                  print_grid=False
-                                  )
+        fig = plotly.subplots.make_subplots(rows=methrows + 1,
+                                            cols=1,
+                                            shared_xaxes=True,
+                                            specs=[[{'rowspan': methrows}], [
+                                                None], [None], [None], [{}], ],
+                                            print_grid=False
+                                            )
         fig["layout"]['yaxis'].update(title='Modified frequency')
         for meth_trace in data.traces:
             fig.append_trace(trace=meth_trace[0], row=1, col=1)

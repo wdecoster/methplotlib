@@ -2,6 +2,7 @@ import plotly
 import plotly.graph_objs as go
 from methplotlib.annotation import parse_gtf
 import sys
+from sklearn.decomposition import PCA
 
 
 class DataTraces(object):
@@ -247,6 +248,34 @@ def pairwise_correlation_plot(full, labels, window):
 
     with open("methylation_frequency_correlation_{}.html".format(window.string), 'w') as output:
         output.write(plotly.offline.plot(dict(data=[trace], layout=layout),
+                                         output_type="div",
+                                         show_link=False)
+                     )
+
+
+def pca(full, labels, window):
+    sklearn_pca = PCA(n_components=2)
+    pca = sklearn_pca.fit_transform(full.transpose())
+    data = [dict(type='scatter',
+                 x=[pca[index, 0]],
+                 y=[pca[index, 1]],
+                 mode='markers',
+                 name=name,
+                 hoverinfo='name',
+                 marker=dict(
+                     size=12,
+                     line=dict(
+                         color='rgba(217, 217, 217, 0.14)',
+                         width=0.5),
+                     opacity=0.8))
+            for index, name in enumerate(labels)]
+
+    layout = dict(
+        xaxis=dict(title='PC1', showline=False),
+        yaxis=dict(title='PC2', showline=False)
+    )
+    with open("principal_components_{}.html".format(window.string), 'w') as output:
+        output.write(plotly.offline.plot(dict(data=data, layout=layout),
                                          output_type="div",
                                          show_link=False)
                      )

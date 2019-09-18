@@ -10,7 +10,7 @@ def main():
     windows = utils.make_windows(args.window)
     for window in windows:
         meth_data = get_data(args.methylation, args.names, window, args.smooth)
-        correlation_plot(meth_data, window)
+        qc_plots(meth_data, window)
         meth_browser(meth_data=meth_data,
                      window=window,
                      gtf=args.gtf,
@@ -84,16 +84,16 @@ def meth_browser(meth_data, window, gtf=False, simplify=False, split=False):
         output.write(plotly.offline.plot(fig, output_type="div", show_link=False))
 
 
-def correlation_plot(meth_data, window):
-    data = [m for m in meth_data if m.data_type == "frequency"]
-    if len(data) < 2:
+def qc_plots(meth_data, window):
+    if len([m for m in meth_data if m.data_type == "frequency"]) < 2:
         return
     else:
-        with open("methylation_frequency_correlation_{}.html".format(window.string), 'w') as output:
-            output.write(plotly.offline.plot(plots.splom(meth_data),
-                                             output_type="div",
-                                             show_link=False)
-                         )
+        data = [m.table.rename({"methylated_frequency": m.name}, axis='columns')
+                for m in meth_data if m.data_type == "frequency"]
+        labels = [m.name for m in meth_data if m.data_type == "frequency"]
+        full = data[0].join(data[1:])
+        plots.pairwise_correlation_plot(full, labels, window)
+        plots.pca(full, labels, window)
 
 
 if __name__ == '__main__':

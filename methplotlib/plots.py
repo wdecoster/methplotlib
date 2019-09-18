@@ -1,3 +1,4 @@
+import plotly
 import plotly.graph_objs as go
 from methplotlib.annotation import parse_gtf
 import sys
@@ -221,11 +222,7 @@ def position_likelihood_trace(read_table, y_pos, minratio, maxratio):
                                   showscale=False))
 
 
-def splom(meth_data):
-    data = [m.table.rename({"methylated_frequency": m.name}, axis='columns')
-            for m in meth_data if m.data_type == "frequency"]
-    labels = [m.name for m in meth_data if m.data_type == "frequency"]
-    full = data[0].join(data[1:])
+def pairwise_correlation_plot(full, labels, window):
     trace = go.Splom(dimensions=[dict(label=l, values=full[l]) for l in labels],
                      marker=dict(size=4,
                                  line=dict(width=0.5,
@@ -242,10 +239,14 @@ def splom(meth_data):
         hovermode=False,
         plot_bgcolor='rgba(240,240,240, 0.95)')
 
-    for i in range(1, len(data) + 1):
+    for i in range(1, len(full.columns) + 1):
         layout["xaxis{}".format(i)] = dict(
             showline=True, zeroline=False, gridcolor='#fff', ticklen=4)
         layout["yaxis{}".format(i)] = dict(
             showline=True, zeroline=False, gridcolor='#fff', ticklen=4)
 
-    return dict(data=[trace], layout=layout)
+    with open("methylation_frequency_correlation_{}.html".format(window.string), 'w') as output:
+        output.write(plotly.offline.plot(dict(data=[trace], layout=layout),
+                                         output_type="div",
+                                         show_link=False)
+                     )

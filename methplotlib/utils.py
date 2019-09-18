@@ -1,6 +1,7 @@
 from argparse import ArgumentParser
 import sys
 from math import ceil
+from methplotlib.version import __version__
 
 
 class Region(object):
@@ -28,6 +29,10 @@ def make_windows(full_window, max_size=1e6):
 
 def get_args():
     parser = ArgumentParser(description="plotting nanopolish methylation calls or frequency")
+    parser.add_argument("-v", "--version",
+                        help="Print version and exit.",
+                        action="version",
+                        version='methplotlib {}'.format(__version__))
     parser.add_argument("-m", "--methylation",
                         nargs='+',
                         help="nanopolish methylation calls or frequency output",

@@ -3,6 +3,8 @@ import plotly.graph_objs as go
 from methplotlib.annotation import parse_gtf
 import sys
 from sklearn.decomposition import PCA
+import plotly.express as px
+import pandas as pd
 
 
 class DataTraces(object):
@@ -276,6 +278,18 @@ def pca(full, labels, window):
     )
     with open("principal_components_{}.html".format(window.string), 'w') as output:
         output.write(plotly.offline.plot(dict(data=data, layout=layout),
+                                         output_type="div",
+                                         show_link=False)
+                     )
+
+
+def global_box(data, window):
+    fig = px.box(pd.concat([d.reset_index(drop=True)
+                            .rename({d.columns[0]: "freq"}, axis="columns")
+                            .assign(dataset=d.columns[0]) for d in data], ignore_index=True),
+                 y="freq", x="dataset")
+    with open("global_box_plot_{}.html".format(window.string), 'w') as output:
+        output.write(plotly.offline.plot(fig,
                                          output_type="div",
                                          show_link=False)
                      )

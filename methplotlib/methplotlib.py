@@ -94,6 +94,7 @@ def qc_plots(meth_data, window):
         full = data[0].join(data[1:]).dropna(how="any", axis="index")
         plots.pairwise_correlation_plot(full, labels, window)
         plots.pca(full, labels, window)
+        plots.global_box(data, window)
 
 
 if __name__ == '__main__':

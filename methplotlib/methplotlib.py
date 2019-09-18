@@ -91,7 +91,7 @@ def qc_plots(meth_data, window):
         data = [m.table.rename({"methylated_frequency": m.name}, axis='columns')
                 for m in meth_data if m.data_type == "frequency"]
         labels = [m.name for m in meth_data if m.data_type == "frequency"]
-        full = data[0].join(data[1:])
+        full = data[0].join(data[1:]).dropna(how="any", axis="index")
         plots.pairwise_correlation_plot(full, labels, window)
         plots.pca(full, labels, window)
 

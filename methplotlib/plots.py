@@ -32,8 +32,8 @@ def annotation(gtf, window, simplify=False):
     annotation = parse_gtf(gtf, window, simplify)
     if annotation:
         for y_pos, transcript in enumerate(annotation):
-            line = gene_line_trace(transcript, window, y_pos)
-            exons = [exon_arrow_trace(transcript, begin, end, y_pos)
+            line = make_per_gene_line_trace(transcript, window, y_pos)
+            exons = [make_per_exon_arrow_trace(transcript, begin, end, y_pos)
                      for begin, end in transcript.exon_tuples
                      if window.begin < begin and window.end > end]
             result.extend([line, *exons])
@@ -42,7 +42,7 @@ def annotation(gtf, window, simplify=False):
         return result, 0
 
 
-def gene_line_trace(transcript, window, y_pos):
+def make_per_gene_line_trace(transcript, window, y_pos):
     """Generate a line trace for the gene
 
     Trace can get limited by the window sizes
@@ -58,7 +58,7 @@ def gene_line_trace(transcript, window, y_pos):
                       showlegend=False)
 
 
-def exon_arrow_trace(transcript, begin, end, y_pos):
+def make_per_exon_arrow_trace(transcript, begin, end, y_pos):
     """Generate a line+marker trace for the exon
 
     The shape is an arrow, as defined by the strand in transcript.marker
@@ -87,7 +87,7 @@ def methylation(meth_data):
     split = False
     for meth in meth_data:
         if meth.data_type in ['raw', 'phased']:
-            traces.append(per_read_traces(meth.table, phased=meth.data_type == 'phased'))
+            traces.append(make_per_read_meth_traces(meth.table, phased=meth.data_type == 'phased'))
             split = True
         else:
             traces.append([go.Scatter(x=meth.table.index, y=meth.table["methylated_frequency"],
@@ -99,11 +99,11 @@ def methylation(meth_data):
     return DataTraces(traces=traces, types=types, names=names, split=split)
 
 
-def per_read_traces(table, phased=False):
+def make_per_read_meth_traces(table, phased=False):
     """Make traces for each read"""
     max_coverage = 100
-    minmax_table = min_and_max_pos(table, phased=phased)
-    y_pos_dict = assign_y_pos(minmax_table, phased=phased, max_coverage=max_coverage)
+    minmax_table = find_min_and_max_pos_per_read(table, phased=phased)
+    y_pos_dict = assign_y_height_per_read(minmax_table, phased=phased, max_coverage=max_coverage)
     ratio_cap = min(abs(table["log_lik_ratio"].min()), abs(table["log_lik_ratio"].max()))
     traces = []
     hidden_reads = 0
@@ -115,15 +115,15 @@ def per_read_traces(table, phased=False):
             phase = None
         try:
             traces.append(
-                read_line_trace(read_range=minmax_table.loc[read],
-                                y_pos=y_pos_dict[read],
-                                strand=strand,
-                                phase=phase))
+                make_per_read_line_trace(read_range=minmax_table.loc[read],
+                                         y_pos=y_pos_dict[read],
+                                         strand=strand,
+                                         phase=phase))
             traces.append(
-                position_likelihood_trace(read_table=table.loc[table["read_name"] == read],
-                                          y_pos=y_pos_dict[read],
-                                          minratio=-ratio_cap,
-                                          maxratio=ratio_cap))
+                make_per_position_likelihood_trace(read_table=table.loc[table["read_name"] == read],
+                                                   y_pos=y_pos_dict[read],
+                                                   minratio=-ratio_cap,
+                                                   maxratio=ratio_cap))
         except KeyError:
             hidden_reads += 1
             continue
@@ -133,7 +133,7 @@ def per_read_traces(table, phased=False):
     return traces
 
 
-def min_and_max_pos(table, phased):
+def find_min_and_max_pos_per_read(table, phased):
     """Return a table with for every read the minimum and maximum position"""
     mm_table = table.loc[:, ["read_name", "pos"]] \
         .groupby('read_name') \
@@ -151,7 +151,7 @@ def min_and_max_pos(table, phased):
         return mm_table
 
 
-def assign_y_pos(df, phased=False, max_coverage=100):
+def assign_y_height_per_read(df, phased=False, max_coverage=100):
     """Assign height of the read in the per read traces
 
     Gets a dataframe of read_name, posmin and posmax.
@@ -181,7 +181,7 @@ def assign_y_pos(df, phased=False, max_coverage=100):
     return y_pos
 
 
-def read_line_trace(read_range, y_pos, strand, phase=None):
+def make_per_read_line_trace(read_range, y_pos, strand, phase=None):
     """Make a grey line trace for a single read,
     with black arrow symbols on the edges indicating strand"""
     symbol = "triangle-right" if strand == "+" else "triangle-left"
@@ -206,7 +206,7 @@ def read_line_trace(read_range, y_pos, strand, phase=None):
                                             color='black')))
 
 
-def position_likelihood_trace(read_table, y_pos, minratio, maxratio):
+def make_per_position_likelihood_trace(read_table, y_pos, minratio, maxratio):
     """Make dots trace per read indicating (with RdBu) colorscale the
     log likelihood of having methylation here"""
     return go.Scatter(x=read_table['pos'],

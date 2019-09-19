@@ -53,7 +53,7 @@ def get_args():
                         help="split, rather than overlay the methylation tracks",
                         action="store_true")
     parser.add_argument("--smooth",
-                        help="Smoothen the datapoints, but reduce the details",
+                        help="When plotting frequencies points are averaged using a rolling window",
                         type=int,
                         default=5)
     args = parser.parse_args()

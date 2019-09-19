@@ -4,10 +4,11 @@ import sys
 
 
 class Methylation(object):
-    def __init__(self, table, data_type, name):
+    def __init__(self, table, data_type, name, called_sites):
         self.table = table
         self.data_type = data_type
         self.name = name
+        self.called_sites = called_sites
 
 
 def read_meth(filename, name, window, smoothen=5):
@@ -26,6 +27,7 @@ def read_meth(filename, name, window, smoothen=5):
         table = table.loc[(table["chromosome"] == window.chromosome)
                           & table["pos"].between(window.begin, window.end)]
         if 'log_lik_ratio' in table:  # indicating the file is 'raw'
+
             if 'PS' in table:  # indicating the file contains phased calls
                 data_type = 'phased'
             else:
@@ -36,7 +38,8 @@ def read_meth(filename, name, window, smoothen=5):
                                           'num_motifs', 'sequence'])
                 .sort_values(['read_name', 'pos']),
                 data_type=data_type,
-                name=name)
+                name=name,
+                called_sites=len(table))
         else:  # assuming the file is from calculate_methylation_frequency
             return Methylation(
                 table=table.drop(columns=['start', 'end', 'num_motifs_in_group',
@@ -48,7 +51,8 @@ def read_meth(filename, name, window, smoothen=5):
                 .rolling(window=smoothen, center=True)
                 .mean(),
                 data_type="frequency",
-                name=name)
+                name=name,
+                called_sites=table["called_sites"].sum())
     except Exception:
         sys.stderr.write("\n\n\nInput file {} not recognized!\n".format(filename))
         sys.stderr.write("\n\n\nDetailed error:\n")

@@ -5,6 +5,16 @@ import plotly
 import plotly.graph_objs as go
 
 
+def num_sites_bar(meth_data):
+    trace = go.Bar(x=[m.name for m in meth_data],
+                   y=[m.called_sites for m in meth_data])
+    layout = dict(title="Number of called positions")
+    return plotly.offline.plot(dict(data=[trace], layout=layout),
+                               output_type="div",
+                               show_link=False,
+                               include_plotlyjs='cdn')
+
+
 def pairwise_correlation_plot(full, labels):
     trace = go.Splom(dimensions=[dict(label=l, values=full[l]) for l in labels],
                      marker=dict(size=4,

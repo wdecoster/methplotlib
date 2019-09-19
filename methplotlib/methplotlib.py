@@ -86,17 +86,18 @@ def meth_browser(meth_data, window, gtf=False, simplify=False, split=False):
 
 
 def qc_plots(meth_data, window):
-    if len([m for m in meth_data if m.data_type == "frequency"]) < 2:
-        return
-    else:
-        data = [m.table.rename({"methylated_frequency": m.name}, axis='columns')
-                for m in meth_data if m.data_type == "frequency"]
-        labels = [m.name for m in meth_data if m.data_type == "frequency"]
-        full = data[0].join(data[1:]).dropna(how="any", axis="index")
-        with open("qc_report_{}.html".format(window.string), 'w') as qc_report:
+    with open("qc_report_{}.html".format(window.string), 'w') as qc_report:
+        qc_report.write(qc.num_sites_bar(meth_data))
+        if len([m for m in meth_data if m.data_type == "frequency"]) > 2:
+            data = [m.table.rename({"methylated_frequency": m.name}, axis='columns')
+                    for m in meth_data if m.data_type == "frequency"]
+            labels = [m.name for m in meth_data if m.data_type == "frequency"]
+            full = data[0].join(data[1:]).dropna(how="any", axis="index")
             qc_report.write(qc.pairwise_correlation_plot(full, labels))
             qc_report.write(qc.pca(full, labels))
             qc_report.write(qc.global_box(data))
+        if len([m for m in meth_data if m.data_type in ["raw", "phased"]]) > 2:
+            pass
 
 
 if __name__ == '__main__':

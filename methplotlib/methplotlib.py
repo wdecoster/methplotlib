@@ -1,6 +1,7 @@
 import plotly
 import methplotlib.plots as plots
 import methplotlib.utils as utils
+import methplotlib.qc as qc
 from methplotlib.import_methylation import get_data
 
 
@@ -92,9 +93,9 @@ def qc_plots(meth_data, window):
                 for m in meth_data if m.data_type == "frequency"]
         labels = [m.name for m in meth_data if m.data_type == "frequency"]
         full = data[0].join(data[1:]).dropna(how="any", axis="index")
-        plots.pairwise_correlation_plot(full, labels, window)
-        plots.pca(full, labels, window)
-        plots.global_box(data, window)
+        qc.pairwise_correlation_plot(full, labels, window)
+        qc.pca(full, labels, window)
+        qc.global_box(data, window)
 
 
 if __name__ == '__main__':

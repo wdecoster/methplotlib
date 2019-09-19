@@ -93,9 +93,10 @@ def qc_plots(meth_data, window):
                 for m in meth_data if m.data_type == "frequency"]
         labels = [m.name for m in meth_data if m.data_type == "frequency"]
         full = data[0].join(data[1:]).dropna(how="any", axis="index")
-        qc.pairwise_correlation_plot(full, labels, window)
-        qc.pca(full, labels, window)
-        qc.global_box(data, window)
+        with open("qc_report_{}.html".format(window.string), 'w') as qc_report:
+            qc_report.write(qc.pairwise_correlation_plot(full, labels))
+            qc_report.write(qc.pca(full, labels))
+            qc_report.write(qc.global_box(data))
 
 
 if __name__ == '__main__':

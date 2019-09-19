@@ -52,7 +52,8 @@ def pca(full, labels):
             for index, name in enumerate(labels)]
 
     layout = dict(xaxis=dict(title='PC1', showline=False),
-                  yaxis=dict(title='PC2', showline=False)
+                  yaxis=dict(title='PC2', showline=False),
+                  title="Principal Component Analysis"
                   )
     return plotly.offline.plot(dict(data=data, layout=layout),
                                output_type="div",
@@ -64,7 +65,7 @@ def global_box(data):
     fig = px.box(pd.concat([d.reset_index(drop=True)
                             .rename({d.columns[0]: "freq"}, axis="columns")
                             .assign(dataset=d.columns[0]) for d in data], ignore_index=True),
-                 y="freq", x="dataset")
+                 x="dataset", y="freq", title="Global frequency of modification")
     return plotly.offline.plot(fig,
                                output_type="div",
                                show_link=False,

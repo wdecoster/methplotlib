@@ -19,16 +19,16 @@ def read_meth(filename, name, window, smoothen=5):
     which will return a dataframe with 'chromosome', 'pos', 'methylated_frequency'
     smoothening the result by a rolling average
 
-    input can also be raw data per read
+    input can also be raw data per read, optionally phased
     which will return a dataframe with 'read', 'chromosome', 'pos', 'log_lik_ratio', 'strand'
     """
     try:
         table = pd.read_csv(filename, sep="\t")
         logging.info("Read the file in a dataframe.")
+        table = table.loc[(table["chromosome"] == window.chromosome) &
+                          table["start"].between(window.begin, window.end)]
         table["pos"] = np.floor(table[['start', 'end']].mean(axis=1)).astype('i8')
-        table = table.loc[(table["chromosome"] == window.chromosome)
-                          & table["pos"].between(window.begin, window.end)]
-        if 'log_lik_ratio' in table:  # indicating the file is 'raw'
+        if 'log_lik_ratio' in table:  # indicating the file is 'raw' or 'phased'
 
             if 'PS' in table:  # indicating the file contains phased calls
                 data_type = 'phased'
@@ -45,6 +45,7 @@ def read_meth(filename, name, window, smoothen=5):
                 name=name,
                 called_sites=len(table))
         else:  # assuming the file is from calculate_methylation_frequency
+            logging.info("File contains frequency data.")
             return Methylation(
                 table=table.drop(columns=['start', 'end', 'num_motifs_in_group',
                                           'called_sites', 'called_sites_methylated',

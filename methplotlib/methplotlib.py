@@ -35,14 +35,8 @@ def meth_browser(meth_data, window, gtf=False, simplify=False, split=False):
     if split or data.split:
         methrows = len(meth_data)
         annot_axis = 'yaxis{}'.format(methrows + 1)
-        fig = plotly.subplots.make_subplots(rows=methrows + 1,
-                                            cols=1,
-                                            shared_xaxes=True,
-                                            specs=[[{}] for i in range(methrows + 1)],
-                                            print_grid=False,
-                                            subplot_titles=data.names
-                                            )
         for position, (sample_traces, sample_type) in enumerate(data, start=1):
+        fig = create_subplots(num_methrows, split=True, names=meth_traces.names)
             for meth_trace in sample_traces:
                 fig.append_trace(trace=meth_trace, row=position, col=1)
             if sample_type == 'frequency':
@@ -55,15 +49,7 @@ def meth_browser(meth_data, window, gtf=False, simplify=False, split=False):
     else:
         methrows = 4
         annot_axis = 'yaxis2'
-        fig = plotly.subplots.make_subplots(rows=methrows + 1,
-                                            cols=1,
-                                            shared_xaxes=True,
-                                            specs=[[{'rowspan': methrows}], [
-                                                None], [None], [None], [{}], ],
-                                            print_grid=False
-                                            )
-        fig["layout"]['yaxis'].update(title='Modified frequency')
-        for meth_trace in data.traces:
+        fig = create_subplots(num_methrows, split=False)
             fig.append_trace(trace=meth_trace[0], row=1, col=1)
         fig["layout"].update(legend=dict(orientation='h'))
     fig["layout"]["xaxis"].update(tickformat='g', separatethousands=True)
@@ -84,6 +70,24 @@ def meth_browser(meth_data, window, gtf=False, simplify=False, split=False):
                          hovermode='closest')
     with open("methylation_browser_{}.html".format(window.string), 'w') as output:
         output.write(plotly.offline.plot(fig, output_type="div", show_link=False))
+def create_subplots(num_methrows, split, names=None):
+    if split:
+        return plotly.subplots.make_subplots(
+            rows=num_methrows + 1,
+            cols=1,
+            shared_xaxes=True,
+            specs=[[{}] for i in range(num_methrows + 1)],
+            print_grid=False,
+            subplot_titles=names
+        )
+    else:
+        return plotly.subplots.make_subplots(
+            rows=num_methrows + 1,
+            cols=1,
+            shared_xaxes=True,
+            specs=[[{'rowspan': num_methrows}], [None], [None], [None], [{}], ],
+            print_grid=False
+        )
 
 
 def qc_plots(meth_data, window):

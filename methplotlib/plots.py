@@ -87,16 +87,21 @@ def methylation(meth_data):
     split = False
     for meth in meth_data:
         if meth.data_type in ['raw', 'phased']:
-            traces.append(make_per_read_meth_traces(meth.table, phased=meth.data_type == 'phased'))
+            traces.append(
+                make_per_read_meth_traces(meth.table, phased=meth.data_type == 'phased'))
             split = True
         else:
-            traces.append([go.Scatter(x=meth.table.index, y=meth.table["methylated_frequency"],
-                                      mode='lines',
-                                      name=meth.name,
-                                      hoverinfo='name')])
+            traces.append(
+                [go.Scatter(x=meth.table.index, y=meth.table["methylated_frequency"],
+                            mode='lines',
+                            name=meth.name,
+                            hoverinfo='name')])
         types.append(meth.data_type)
         names.append(meth.name)
-    return DataTraces(traces=traces, types=types, names=names, split=split)
+    return DataTraces(traces=traces,
+                      types=types,
+                      names=names,
+                      split=split)
 
 
 def make_per_read_meth_traces(table, phased=False):

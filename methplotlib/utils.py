@@ -2,6 +2,9 @@ from argparse import ArgumentParser
 import sys
 from math import ceil
 from methplotlib.version import __version__
+from datetime import datetime as dt
+from time import time
+import logging
 
 
 class Region(object):
@@ -60,3 +63,15 @@ def get_args():
     if not len(args.names) == len(args.methylation):
         sys.exit("INPUT ERROR: Expecting the same number of names as datasets!")
     return args
+
+def init_logs(args):
+    """Initiate log file and log arguments."""
+    start_time = dt.fromtimestamp(time()).strftime('%Y%m%d_%H%M')
+    logname = "methplotlib_" + start_time + ".log"
+    handlers = [logging.FileHandler(logname)]
+    logging.basicConfig(
+        format='%(asctime)s %(message)s',
+        handlers=handlers,
+        level=logging.INFO)
+    logging.info('methplotlib {} started.\nPython version is: {}\nArguments are: {}'.format(
+        __version__, sys.version.replace('\n', ' '), args))

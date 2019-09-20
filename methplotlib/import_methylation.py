@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import sys
+import logging
 
 
 class Methylation(object):
@@ -23,6 +24,7 @@ def read_meth(filename, name, window, smoothen=5):
     """
     try:
         table = pd.read_csv(filename, sep="\t")
+        logging.info("Read the file in a dataframe.")
         table["pos"] = np.floor(table[['start', 'end']].mean(axis=1)).astype('i8')
         table = table.loc[(table["chromosome"] == window.chromosome)
                           & table["pos"].between(window.begin, window.end)]
@@ -30,8 +32,10 @@ def read_meth(filename, name, window, smoothen=5):
 
             if 'PS' in table:  # indicating the file contains phased calls
                 data_type = 'phased'
+                logging.info("File contains phased raw data.")
             else:
                 data_type = 'raw'
+                logging.info("File contains raw data.")
             return Methylation(
                 table=table.drop(columns=['start', 'end', 'log_lik_methylated',
                                           'log_lik_unmethylated', 'num_calling_strands',

@@ -3,20 +3,26 @@ import methplotlib.plots as plots
 import methplotlib.utils as utils
 import methplotlib.qc as qc
 from methplotlib.import_methylation import get_data
+import logging
 
 
 def main():
     args = utils.get_args()
+    utils.init_logs(args)
     windows = utils.make_windows(args.window)
     for window in windows:
+        logging.info("Processing {}".format(window.string))
         meth_data = get_data(args.methylation, args.names, window, args.smooth)
+        logging.info("Collected methylation data for {} datasets".format(len(meth_data)))
         qc_plots(meth_data, window)
+        logging.info("Created QC plots")
         meth_browser(meth_data=meth_data,
                      window=window,
                      gtf=args.gtf,
                      simplify=args.simplify,
                      split=args.split,
                      )
+    logging.info("Finished!")
 
 
 def meth_browser(meth_data, window, gtf=False, simplify=False, split=False):
@@ -32,6 +38,7 @@ def meth_browser(meth_data, window, gtf=False, simplify=False, split=False):
     the trace to be used for annotation is thus methrows + 1
     """
     meth_traces = plots.methylation(meth_data)
+    logging.info("Prepared methylation traces.")
     if split or meth_traces.split:
         num_methrows = len(meth_data)
         annot_row = num_methrows + 1
@@ -56,6 +63,7 @@ def meth_browser(meth_data, window, gtf=False, simplify=False, split=False):
             fig.append_trace(trace=meth_trace[0], row=1, col=1)
         fig["layout"].update(legend=dict(orientation='h'))
         fig["layout"]['yaxis'].update(title="Modified <br> frequency")
+    logging.info("Prepared modification plots.")
     if gtf:
         annotation_traces, y_max = plots.annotation(gtf, window, simplify)
         for annot_trace in annotation_traces:
@@ -66,6 +74,7 @@ def meth_browser(meth_data, window, gtf=False, simplify=False, split=False):
                                          showline=False,
                                          ticks='',
                                          showticklabels=False)
+        logging.info("Prepared annotation plots.")
     fig["layout"].update(barmode='overlay',
                          title="Nucleotide modifications",
                          hovermode='closest')

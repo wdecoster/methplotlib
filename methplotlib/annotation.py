@@ -3,6 +3,7 @@ import itertools
 import sys
 from plotly.colors import DEFAULT_PLOTLY_COLORS as plcolors
 import gzip
+import logging
 
 
 class Transcript(object):
@@ -71,9 +72,11 @@ def parse_gtf(gtff, window, simplify=False):
     Parse the gtff and select the relevant region as determined by the window
     return as Transcript objects
     """
+    logging.info("Parsing GTF file...")
     df = pd.DataFrame(data=[get_features(line)
                             for line in open_gtf(gtff) if good_record(line, window.chromosome)],
                       columns=['chromosome', 'begin', 'end', 'strand', 'gene', 'transcript'])
+    logging.info("Loaded GTF file, processing...")
     if simplify:
         df.drop_duplicates(subset=['chromosome', 'begin', 'end', 'gene'], inplace=True)
         res = []
@@ -89,6 +92,7 @@ def parse_gtf(gtff, window, simplify=False):
                                strand=gtable["strand"].tolist()[0])
                 )
         sys.stderr.write("Found {} genes in the region.\n".format(len(res)))
+        logging.info("Found {} genes in the region.\n".format(len(res)))
     else:
         res = []
         for t in transcripts_in_window(df, window, feature="transcript"):
@@ -102,6 +106,7 @@ def parse_gtf(gtff, window, simplify=False):
                            strand=tr["strand"].tolist()[0])
             )
         sys.stderr.write("Found {} transcripts in the region.\n".format(len(res)))
+        logging.info("Found {} transcripts in the region.\n".format(len(res)))
     assign_colors_to_genes(res)
     return res
 

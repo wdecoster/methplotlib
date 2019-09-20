@@ -1,5 +1,5 @@
 import plotly.graph_objs as go
-from methplotlib.annotation import parse_gtf
+from methplotlib.annotation import parse_gtf, parse_bed
 import sys
 
 
@@ -22,7 +22,7 @@ class DataTraces(object):
             return self.traces[self.index - 1], self.types[self.index - 1]
 
 
-def annotation(gtf, window, simplify=False):
+def gtf_annotation(gtf, window, simplify=False):
     """
     Return a plotly trace for the annotation
     with a line for the entire gene and triangles for exons,
@@ -75,6 +75,17 @@ def make_per_exon_arrow_trace(transcript, begin, end, y_pos):
                                   size=8))
 
 
+def bed_annotation(bed, window):
+    return [go.Scatter(x=[begin, end],
+                       y=[-2, -2],
+                       mode='lines',
+                       line=dict(width=16, color='grey'),
+                       text=name,
+                       hoverinfo='text',
+                       showlegend=False)
+            for (begin, end, name) in parse_bed(bed, window)]
+
+
 def methylation(meth_data):
     """
     Call function get_data to parse files from nanopolish,
@@ -104,9 +115,8 @@ def methylation(meth_data):
                       split=split)
 
 
-def make_per_read_meth_traces(table, phased=False):
+def make_per_read_meth_traces(table, phased=False, max_coverage=100):
     """Make traces for each read"""
-    max_coverage = 100
     minmax_table = find_min_and_max_pos_per_read(table, phased=phased)
     y_pos_dict = assign_y_height_per_read(minmax_table, phased=phased, max_coverage=max_coverage)
     ratio_cap = min(abs(table["log_lik_ratio"].min()), abs(table["log_lik_ratio"].max()))
@@ -222,5 +232,5 @@ def make_per_position_likelihood_trace(read_table, y_pos, minratio, maxratio):
                                   color=read_table['log_lik_ratio'],
                                   cmin=minratio,
                                   cmax=maxratio,
-                                  colorscale='RdBu',
+                                  colorscale='bluered',
                                   showscale=False))

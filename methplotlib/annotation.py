@@ -116,3 +116,12 @@ def assign_colors_to_genes(transcripts):
     colordict = {g: c for g, c in zip(genes, plcolors * 100)}
     for t in transcripts:
         t.color = colordict[t.gene]
+
+
+def parse_bed(bed, window):
+    logging.info("Parsing BED file")
+    df = pd.read_csv(bed, sep="\t", names=['chromosome', 'begin', 'end', 'name', 'score'])
+    return df.loc[df['begin'].between(window.begin, window.end)
+                  | df['end'].between(window.begin, window.end)] \
+        .drop(columns=['chromosome', 'score']) \
+        .itertuples(index=False, name=None)

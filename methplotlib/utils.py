@@ -49,6 +49,8 @@ def get_args():
                         required=True)
     parser.add_argument("-g", "--gtf",
                         help="add annotation based on a gtf file matching to your reference genome")
+    parser.add_argument("-b", "--bed",
+                        help="add annotation based on a bed file matching to your reference genome")
     parser.add_argument("--simplify",
                         help="simplify annotation track to show genes rather than transcripts",
                         action="store_true")
@@ -63,6 +65,7 @@ def get_args():
     if not len(args.names) == len(args.methylation):
         sys.exit("INPUT ERROR: Expecting the same number of names as datasets!")
     return args
+
 
 def init_logs(args):
     """Initiate log file and log arguments."""

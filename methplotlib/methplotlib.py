@@ -19,23 +19,23 @@ def main():
         meth_browser(meth_data=meth_data,
                      window=window,
                      gtf=args.gtf,
+                     bed=args.bed,
                      simplify=args.simplify,
                      split=args.split,
                      )
     logging.info("Finished!")
 
 
-def meth_browser(meth_data, window, gtf=False, simplify=False, split=False):
+def meth_browser(meth_data, window, gtf=False, bed=False, simplify=False, split=False):
     """
-    methlist is a list of files from calculate_methylation_frequency
-    names should have the same length as methlist and contain identifiers for the datasets
-    annotation is optional and is a gtf, which will be processed by parse_gtf()
+    meth_Data is a list of Methylation objects from the import_methylation submodule
+    annotation is optional and is a gtf or bed file
 
-    if the traces are split per sample,
-     then show one line per sample and one for the annotation
-    if no splitting is done,
-     then 4/5 of the browser is used for overlayed samples and one for annotation
-    the trace to be used for annotation is thus methrows + 1
+    if the traces are to be --split per sample (or include raw data as flagged in data.split),
+     then show one line per sample and one for the annotation, with methrows = number of datasets
+    if no splitting is needed,
+     then 4/5 of the browser is used for overlayed samples and one for gtf annotation
+    the trace to be used for annotation is thus always methrows + 1
     """
     meth_traces = plots.methylation(meth_data)
     logging.info("Prepared methylation traces.")
@@ -64,11 +64,16 @@ def meth_browser(meth_data, window, gtf=False, simplify=False, split=False):
         fig["layout"].update(legend=dict(orientation='h'))
         fig["layout"]['yaxis'].update(title="Modified <br> frequency")
     logging.info("Prepared modification plots.")
+    if bed:
+        for annot_trace in plots.bed_annotation(bed, window):
+            fig.append_trace(trace=annot_trace, row=annot_row, col=1)
+        y_max = -2
     if gtf:
-        annotation_traces, y_max = plots.annotation(gtf, window, simplify)
+        annotation_traces, y_max = plots.gtf_annotation(gtf, window, simplify)
         for annot_trace in annotation_traces:
-            fig.append_trace(trace=annot_trace, row=methrows + 1, col=1)
-        fig["layout"][annot_axis].update(range=[-1, y_max + 1],
+            fig.append_trace(trace=annot_trace, row=annot_row, col=1)
+    if bed or gtf:
+        fig["layout"][annot_axis].update(range=[-2, y_max + 1],
                                          showgrid=False,
                                          zeroline=False,
                                          showline=False,
@@ -81,6 +86,7 @@ def meth_browser(meth_data, window, gtf=False, simplify=False, split=False):
     fig["layout"]["xaxis"].update(tickformat='g',
                                   separatethousands=True,
                                   range=[window.begin, window.end])
+
     with open("methylation_browser_{}.html".format(window.string), 'w') as output:
         output.write(plotly.offline.plot(fig,
                                          output_type="div",

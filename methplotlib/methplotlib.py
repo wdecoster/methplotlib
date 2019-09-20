@@ -31,12 +31,13 @@ def meth_browser(meth_data, window, gtf=False, simplify=False, split=False):
      then 4/5 of the browser is used for overlayed samples and one for annotation
     the trace to be used for annotation is thus methrows + 1
     """
-    data = plots.methylation(meth_data)
-    if split or data.split:
-        methrows = len(meth_data)
-        annot_axis = 'yaxis{}'.format(methrows + 1)
-        for position, (sample_traces, sample_type) in enumerate(data, start=1):
+    meth_traces = plots.methylation(meth_data)
+    if split or meth_traces.split:
+        num_methrows = len(meth_data)
+        annot_row = num_methrows + 1
+        annot_axis = 'yaxis{}'.format(annot_row)
         fig = create_subplots(num_methrows, split=True, names=meth_traces.names)
+        for position, (sample_traces, sample_type) in enumerate(meth_traces, start=1):
             for meth_trace in sample_traces:
                 fig.append_trace(trace=meth_trace, row=position, col=1)
             if sample_type == 'frequency':
@@ -47,12 +48,13 @@ def meth_browser(meth_data, window, gtf=False, simplify=False, split=False):
                     title="Modification <br> probability")
         fig["layout"].update(showlegend=False)
     else:
-        methrows = 4
+        num_methrows = 4
+        annot_row = 5
         annot_axis = 'yaxis2'
         fig = create_subplots(num_methrows, split=False)
+        for meth_trace in meth_traces.traces:
             fig.append_trace(trace=meth_trace[0], row=1, col=1)
         fig["layout"].update(legend=dict(orientation='h'))
-    fig["layout"]["xaxis"].update(tickformat='g', separatethousands=True)
         fig["layout"]['yaxis'].update(title="Modified <br> frequency")
     if gtf:
         annotation_traces, y_max = plots.annotation(gtf, window, simplify)
@@ -64,12 +66,19 @@ def meth_browser(meth_data, window, gtf=False, simplify=False, split=False):
                                          showline=False,
                                          ticks='',
                                          showticklabels=False)
-        fig["layout"]["xaxis"].update(range=[window.begin, window.end])
     fig["layout"].update(barmode='overlay',
                          title="Nucleotide modifications",
                          hovermode='closest')
+    fig["layout"]["xaxis"].update(tickformat='g',
+                                  separatethousands=True,
+                                  range=[window.begin, window.end])
     with open("methylation_browser_{}.html".format(window.string), 'w') as output:
-        output.write(plotly.offline.plot(fig, output_type="div", show_link=False))
+        output.write(plotly.offline.plot(fig,
+                                         output_type="div",
+                                         show_link=False,
+                                         include_plotlyjs='cdn'))
+
+
 def create_subplots(num_methrows, split, names=None):
     if split:
         return plotly.subplots.make_subplots(

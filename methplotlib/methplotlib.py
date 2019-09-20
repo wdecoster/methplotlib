@@ -47,10 +47,10 @@ def meth_browser(meth_data, window, gtf=False, simplify=False, split=False):
                 fig.append_trace(trace=meth_trace, row=position, col=1)
             if sample_type == 'frequency':
                 fig["layout"]["yaxis{}".format(position)].update(
-                    title='Modified frequency')
+                    title="Modified <br> frequency")
             else:
                 fig["layout"]["yaxis{}".format(position)].update(
-                    title='Modification likelihood')
+                    title="Modification <br> probability")
         fig["layout"].update(showlegend=False)
     else:
         methrows = 4
@@ -67,6 +67,7 @@ def meth_browser(meth_data, window, gtf=False, simplify=False, split=False):
             fig.append_trace(trace=meth_trace[0], row=1, col=1)
         fig["layout"].update(legend=dict(orientation='h'))
     fig["layout"]["xaxis"].update(tickformat='g', separatethousands=True)
+        fig["layout"]['yaxis'].update(title="Modified <br> frequency")
     if gtf:
         annotation_traces, y_max = plots.annotation(gtf, window, simplify)
         for annot_trace in annotation_traces:

@@ -25,6 +25,5 @@ Arguments:
 
 
 ## TO DO - CONTRIBUTIONS WELCOME
-- Adapt to also use methylation data from tombo
 - Differential methylation analysis (in windows) across groups of samples
 - Outlier detection (in windows) across samples

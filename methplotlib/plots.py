@@ -222,8 +222,14 @@ def make_per_read_line_trace(read_range, y_pos, strand, phase=None):
 
 
 def make_per_position_likelihood_trace(read_table, y_pos, minratio, maxratio):
-    """Make dots trace per read indicating (with RdBu) colorscale the
+    """Make dots trace per read indicating with the RdBu colorscale from plotly 3.0.0, showing the
     log likelihood of having methylation here"""
+    old_RdBu = [[0, 'rgb(5,10,172)'],
+                [0.35, 'rgb(106,137,247)'],
+                [0.5, 'rgb(190,190,190)'],
+                [0.6, 'rgb(220,170,132)'],
+                [0.7, 'rgb(230,145,90)'],
+                [1, 'rgb(178,10,28)']]
     return go.Scatter(x=read_table['pos'],
                       y=[y_pos] * len(read_table),
                       mode='markers',
@@ -232,5 +238,5 @@ def make_per_position_likelihood_trace(read_table, y_pos, minratio, maxratio):
                                   color=read_table['log_lik_ratio'],
                                   cmin=minratio,
                                   cmax=maxratio,
-                                  colorscale='bluered',
+                                  colorscale=old_RdBu,
                                   showscale=False))

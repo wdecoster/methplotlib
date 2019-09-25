@@ -234,6 +234,8 @@ def make_per_position_likelihood_trace(read_table, y_pos, minratio, maxratio):
                       y=[y_pos] * len(read_table),
                       mode='markers',
                       showlegend=False,
+                      text=read_table['log_lik_ratio'],
+                      hoverinfo="text",
                       marker=dict(size=4,
                                   color=read_table['log_lik_ratio'],
                                   cmin=minratio,

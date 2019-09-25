@@ -82,7 +82,8 @@ def meth_browser(meth_data, window, gtf=False, bed=False, simplify=False, split=
         logging.info("Prepared annotation plots.")
     fig["layout"].update(barmode='overlay',
                          title="Nucleotide modifications",
-                         hovermode='closest')
+                         hovermode='closest',
+                         plot_bgcolor='rgba(0,0,0,0)')
     fig["layout"]["xaxis"].update(tickformat='g',
                                   separatethousands=True,
                                   range=[window.begin, window.end])

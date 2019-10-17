@@ -120,8 +120,8 @@ def assign_colors_to_genes(transcripts):
 
 def parse_bed(bed, window):
     logging.info("Parsing BED file")
-    df = pd.read_csv(bed, sep="\t", names=['chromosome', 'begin', 'end', 'name', 'score'])
+    df = pd.read_csv(bed, sep="\t", names=['chromosome', 'begin', 'end', 'name', 'score', 'strand'])
     return df.loc[df['begin'].between(window.begin, window.end)
                   | df['end'].between(window.begin, window.end)] \
-        .drop(columns=['chromosome', 'score']) \
+        .drop(columns=['chromosome', 'score', 'strand']) \
         .itertuples(index=False, name=None)

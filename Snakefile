@@ -39,7 +39,7 @@ rule nanopolish_index:
         "logs/nanopolish_index/index_{sample}.log"
     shell:
         """
-        nanopolish index -f {input.sm} -d {input.f5}/ {input.fq} 2> {log}
+        nanopolish index -d {input.f5}/ {input.fq} 2> {log}
         touch {output}
         """
 

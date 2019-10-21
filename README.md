@@ -23,6 +23,8 @@ Arguments:
   --smooth SMOOTH       Smoothen the datapoints, but reduce the details (integer, default=5)
 ```
 
+## Snakemake workflow
+For streamlining nanopolish a Snakefile is included (using snakemake). The workflow uses a config file, of which an example is in this repository.
 
 ## TO DO - CONTRIBUTIONS WELCOME
 - Differential methylation analysis (in windows) across groups of samples

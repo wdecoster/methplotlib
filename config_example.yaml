@@ -14,11 +14,6 @@ fastq:
     sampleB: /path/to/sampleB/reads.fastq.gz
     sampleC: /path/to/sampleC/reads.fastq.gz
 
-summary:
-    sampleA: /path/to/sampleA/summaries.fofn
-    sampleB: /path/to/sampleB/summaries.fofn
-    sampleC: /path/to/sampleC/summaries.fofn
-
 bam:
     sampleA: /path/to/sampleA/alignment.bam
     sampleB: /path/to/sampleB/alignment.bam

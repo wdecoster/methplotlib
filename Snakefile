@@ -34,7 +34,7 @@ rule nanopolish_index:
         sm = get_summary,
     output:
         "indices/index_done_{sample}"
-    threads: 40  # Just to ensure that this is not ran in parallel
+    threads: 10  # Just to ensure that this is not ran in parallel for too many samples
     log:
         "logs/nanopolish_index/index_{sample}.log"
     shell:

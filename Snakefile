@@ -13,10 +13,6 @@ def get_bam(wildcards):
     return config["bam"][wildcards.sample]
 
 
-def get_summary(wildcards):
-    return config["summary"][wildcards.sample]
-
-
 def get_region(wildcards):
     return config["region"][wildcards.region]
 
@@ -31,7 +27,6 @@ rule nanopolish_index:
     input:
         f5 = get_fast5,
         fq = get_fastq,
-        sm = get_summary,
     output:
         "indices/index_done_{sample}"
     threads: 10  # Just to ensure that this is not ran in parallel for too many samples

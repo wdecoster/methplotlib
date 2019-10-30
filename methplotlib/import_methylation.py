@@ -25,8 +25,9 @@ def read_meth(filename, name, window, smoothen=5):
     try:
         table = pd.read_csv(filename, sep="\t")
         logging.info("Read the file in a dataframe.")
-        table = table.loc[(table["chromosome"] == window.chromosome) &
-                          table["start"].between(window.begin, window.end)]
+        if window:
+            table = table.loc[(table["chromosome"] == window.chromosome) &
+                              table["start"].between(window.begin, window.end)]
         table["pos"] = np.floor(table[['start', 'end']].mean(axis=1)).astype('i8')
         if 'log_lik_ratio' in table:  # indicating the file is 'raw' or 'phased'
 

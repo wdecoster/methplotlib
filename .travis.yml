@@ -1,0 +1,24 @@
+language: python
+
+os:
+  - linux
+
+python:
+  - "3.5"
+  - "3.6"
+  - "3.7"
+
+before_install:
+  - cp README.md README.rst
+
+install:
+  - pip install -e .
+
+script:
+  - bash test/test.sh
+
+notifications:
+  email: false
+  webhooks:
+    urls:
+        - https://webhooks.gitter.im/e/4b1c45cea6826ce475c2

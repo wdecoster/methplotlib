@@ -91,8 +91,8 @@ def parse_gtf(gtff, window, simplify=False):
                                            name=None),
                                strand=gtable["strand"].tolist()[0])
                 )
-        sys.stderr.write("Found {} genes in the region.\n".format(len(res)))
-        logging.info("Found {} genes in the region.\n".format(len(res)))
+        sys.stderr.write("Found {} gene(s) in the region.\n".format(len(res)))
+        logging.info("Found {} gene(s) in the region.\n".format(len(res)))
     else:
         res = []
         for t in transcripts_in_window(df, window, feature="transcript"):
@@ -105,8 +105,8 @@ def parse_gtf(gtff, window, simplify=False):
                                                                               name=None),
                            strand=tr["strand"].tolist()[0])
             )
-        sys.stderr.write("Found {} transcripts in the region.\n".format(len(res)))
-        logging.info("Found {} transcripts in the region.\n".format(len(res)))
+        sys.stderr.write("Found {} transcript(s) in the region.\n".format(len(res)))
+        logging.info("Found {} transcript(s) in the region.\n".format(len(res)))
     assign_colors_to_genes(res)
     return res
 

@@ -8,15 +8,20 @@ import numpy as np
 
 def main():
     args = get_args()
-    colnames = ["Chromosome", "Start", "End", "num_motifs", "calls", "methylated", "freq", "seq"]
-    h1 = PyRanges(pd.read_csv(args.methylation[0], sep="\t", names=colnames, header=0))
-    h2 = PyRanges(pd.read_csv(args.methylation[1], sep="\t", names=colnames, header=0))
+    h1 = pyranges_from_csv(args.methylation[0])
+    h2 = pyranges_from_csv(args.methylation[1])
     print("{}\t{}\t{}\t{}\t{}".format("chromosome", "begin", "end", "odds_ratio", "p-value"))
     for chr, begin, end in pr.read_bed(args.bed).merge().as_df().itertuples(index=False, name=None):
         odr, pv = fisher_exact([meth_counts(h1[chr, begin:end]),
                                 meth_counts(h2[chr, begin:end])])
         if not np.isnan(odr):
             print("{}\t{}\t{}\t{}\t{}".format(chr, begin, end, odr, pv))
+
+
+def pyranges_from_csv(inputfile):
+    colnames = ["Chromosome", "Start", "End", "num_motifs", "calls", "methylated"]
+    usecols = [0, 1, 2, 3, 4, 5]
+    return PyRanges(pd.read_csv(inputfile, sep="\t", names=colnames, header=0, usecols=usecols))
 
 
 def meth_counts(interval):

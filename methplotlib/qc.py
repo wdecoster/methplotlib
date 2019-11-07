@@ -15,8 +15,8 @@ def num_sites_bar(meth_data):
                                include_plotlyjs='cdn')
 
 
-def pairwise_correlation_plot(full, labels):
-    trace = go.Splom(dimensions=[dict(label=l, values=full[l]) for l in labels],
+def pairwise_correlation_plot(full):
+    trace = go.Splom(dimensions=[dict(label=l, values=full[l]) for l in full.columns],
                      marker=dict(size=4,
                                  line=dict(width=0.5,
                                            color='rgb(230,230,230)')),
@@ -44,7 +44,7 @@ def pairwise_correlation_plot(full, labels):
                                include_plotlyjs='cdn')
 
 
-def pca(full, labels):
+def pca(full):
     sklearn_pca = PCA(n_components=2)
     pca = sklearn_pca.fit_transform(full.transpose())
     data = [dict(type='scatter',
@@ -59,7 +59,7 @@ def pca(full, labels):
                          color='rgba(217, 217, 217, 0.14)',
                          width=0.5),
                      opacity=0.8))
-            for index, name in enumerate(labels)]
+            for index, name in enumerate(full.columns)]
 
     layout = dict(xaxis=dict(title='PC1', showline=False),
                   yaxis=dict(title='PC2', showline=False),

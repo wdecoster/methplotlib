@@ -126,6 +126,8 @@ def qc_plots(meth_data, window):
             qc_report.write(qc.pairwise_correlation_plot(full, labels))
             qc_report.write(qc.pca(full, labels))
             qc_report.write(qc.global_box(data))
+        if len([m for m in meth_data if m.data_type == "frequency"]) > 0:
+            qc_report.write(qc.modified_fraction_histogram(full))
         if len([m for m in meth_data if m.data_type in ["raw", "phased"]]) > 2:
             pass
 

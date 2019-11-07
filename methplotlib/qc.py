@@ -80,3 +80,22 @@ def global_box(data):
                                output_type="div",
                                show_link=False,
                                include_plotlyjs='cdn')
+
+
+def modified_fraction_histogram(full):
+    traces = [go.Histogram(x=full[dataset].dropna(),
+                           histnorm='probability density',
+                           xbins=dict(start=0, size=0.01, end=1),
+                           name=dataset,
+                           opacity=0.6
+                           )
+              for dataset in full.columns]
+    layout = dict(barmode="overlay",
+                  title="Histogram of modified fractions",
+                  xaxis=dict(title="Methylated fraction"),
+                  yaxis=dict(title="Frequency"))
+    return plotly.offline.plot(dict(data=traces,
+                                    layout=layout),
+                               output_type="div",
+                               show_link=False,
+                               include_plotlyjs='cdn')

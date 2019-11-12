@@ -84,13 +84,12 @@ if __name__ == '__main__':
         import sys
         gr.to_csv(sys.stdout, sep="\t")# index=False)
     else:
-        import os.path as path
-        from subprocess import call
-        dir_name = path.dirname(f)
-        if dir_name:
-            call(["mkdir", "-p", dir_name])
+        from pathlib import Path
 
-        gr.to_csv(f, sep="\t", index=False)
+        p = Path(f)
+        Path.mkdir(p.parent, exist_ok=True, parents=True)
+
+        gr.to_csv(str(p), sep="\t")
 
 
 

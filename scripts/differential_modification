@@ -89,7 +89,8 @@ if __name__ == '__main__':
         dir_name = path.dirname(f)
         if dir_name:
             call(["mkdir", "-p", dir_name])
-            gr.to_csv(f, sep="\t", index=False)
+
+        gr.to_csv(f, sep="\t", index=False)
 
 
 

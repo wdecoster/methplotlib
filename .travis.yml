@@ -10,6 +10,7 @@ python:
 
 before_install:
   - cp README.md README.rst
+  - pip install cython
 
 install:
   - pip install -e .

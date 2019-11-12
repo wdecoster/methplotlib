@@ -1,0 +1,95 @@
+#!/usr/bin/env python
+
+import pandas as pd
+from argparse import ArgumentParser
+import pyranges as pr
+from pyranges import PyRanges
+import numpy as np
+
+def _methylated_and_freq_to_zero(df):
+
+    a_zero = df.Start == -1
+    df.loc[a_zero, ["methylated", "calls"]] = 0
+    b_zero = df.Start_b == -1
+    df.loc[b_zero, ["methylated_b", "calls_b"]] = 0
+
+    return df
+
+
+def count_total_and_methylated(df):
+    """For each region in bed, get sum of calls and methylated"""
+
+    grpby = df.groupby("ID")
+    total = grpby.calls.sum()
+    methylated = grpby.methylated.sum()
+
+    chromosome = df.Chromosome.iloc[0]
+    start = grpby.Start.first()
+    end = grpby.End.first()
+    region_id = grpby.ID.first()
+
+    return pd.DataFrame({"Chromosome": chromosome, "Start": start, "End": end, "ID": region_id,
+                         "calls": total, "methylated": methylated})
+
+
+def main(a, b, bed):
+
+    a_range = pr.concat([pyranges_from_csv(f) for f in a])
+    b_range = pr.concat([pyranges_from_csv(f) for f in b])
+    bed = pr.read_bed(args.bed).merge()
+    bed.ID = np.arange(len(bed))
+
+    if "Strand" in bed:
+        bed = bed.drop("Strand")
+
+    a_range = bed.join(a_range).apply(count_total_and_methylated).drop(like="_b")
+    b_range = bed.join(b_range).apply(count_total_and_methylated).drop(like="_b")
+
+    m = a_range.join(b_range, how="outer")
+
+    m = m.apply(_methylated_and_freq_to_zero).drop(like="(Start|End|ID)_b|ID")
+
+    m1, c1, m2, c2 = m.methylated, m.calls, m.methylated_b, m.calls_b,
+    fe = pr.stats.fisher_exact(c1 - m1, m1, c2 - m2, m2, pseudocount=0.01, alternative="twosided")
+
+    m = m + fe
+
+    return m
+
+
+def pyranges_from_csv(inputfile):
+    colnames = ["Chromosome", "Start", "End", "calls", "methylated"]
+    return PyRanges(pd.read_csv(inputfile, sep="\t", names=colnames, header=0, usecols=[0, 1, 2, 4, 5]))
+
+
+def get_args():
+    parser = ArgumentParser(
+        description="Check for modification differences using fisher exact test.")
+    parser.add_argument(
+        "-b", "--bed", help="Bed file to aggregate modifications on.", required=True)
+    parser.add_argument("-A", "--Agroup", nargs='+', help="Frequencies of group A.")
+    parser.add_argument("-B", "--Bgroup", nargs='+', help="Frequencies of group B.")
+    parser.add_argument("-o", "--out", help="File to write results to. Default: stdout.", default="-")
+    return parser.parse_args()
+
+
+if __name__ == '__main__':
+
+    args = get_args()
+    gr = main(args.Agroup, args.Bgroup, args.bed)
+
+    f = args.out
+
+    if f == "-":
+        import sys
+        gr.to_csv(sys.stdout, sep="\t")# index=False)
+    else:
+        import os.path as path
+        from subprocess import call
+        dir_name = path.dirname(f)
+        if dir_name:
+            call(["mkdir", "-p", dir_name])
+            gr.to_csv(f, sep="\t", index=False)
+
+
+

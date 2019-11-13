@@ -24,7 +24,7 @@ def pairwise_correlation_plot(full):
                      )
 
     layout = go.Layout(
-        title='Correlation of methylation frequency',
+        title='Correlation of modification frequency',
         dragmode='select',
         width=1200,
         height=1200,
@@ -92,7 +92,7 @@ def modified_fraction_histogram(full):
               for dataset in full.columns]
     layout = dict(barmode="overlay",
                   title="Histogram of modified fractions",
-                  xaxis=dict(title="Methylated fraction"),
+                  xaxis=dict(title="Modified fraction"),
                   yaxis=dict(title="Frequency"))
     return plotly.offline.plot(dict(data=traces,
                                     layout=layout),

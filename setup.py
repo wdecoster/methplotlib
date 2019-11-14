@@ -35,6 +35,7 @@ setup(
                       'numpy>=1.14.3',
                       'pandas>=0.23.4',
                       'pyranges>=0.0.62',
+                      'fisher>=0.1.9',
                       'sklearn'],
     package_data={'methplotlib': []},
     package_dir={'methplotlib': 'methplotlib'},

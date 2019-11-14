@@ -4,43 +4,48 @@ import pandas as pd
 from argparse import ArgumentParser
 import pyranges as pr
 from pyranges import PyRanges
+from scipy.stats import fisher_exact
 import numpy as np
 
 from methplotlib.differential.differential import main
-from methplotlib.helpers import methylation_pyranges_from_csv
+
 
 def get_args():
     parser = ArgumentParser(
         description="Check for modification differences using fisher exact test.")
     parser.add_argument(
         "-b", "--bed", help="Bed file to aggregate modifications on.", required=True)
-    parser.add_argument("-A", "--Agroup", nargs='+', help="Frequencies of group A.")
-    parser.add_argument("-B", "--Bgroup", nargs='+', help="Frequencies of group B.")
+    parser.add_argument("methylation", nargs=2, help="Haplotype specific frequency files.")
     parser.add_argument("-o", "--out", help="File to write results to. Default: stdout.", default="-")
     return parser.parse_args()
+
 
 if __name__ == '__main__':
 
     args = get_args()
 
-    a_range = pr.concat([methylation_pyranges_from_csv(f) for f in args.Agroup])
-    b_range = pr.concat([methylation_pyranges_from_csv(f) for f in args.Bgroup])
-    bed = pr.read_bed(args.bed).merge()
+    from methplotlib.helpers import methylation_pyranges_from_csv
 
-    gr = main(a_range, b_range, bed)
+    f1, f2 = args.methylation
+
+    gr = methylation_pyranges_from_csv(f1)
+    gr2 = methylation_pyranges_from_csv(f2)
+
+    # df = pd.read_csv(args.methylation[0], sep="\t")
+    # df2 = pd.read_csv(args.methylation[1], sep="\t")
+    bed = pr.read_bed(args.bed).merge()
+    result = main(gr, gr2, bed)
 
     f = args.out
 
     if f == "-":
         import sys
-        gr.to_csv(sys.stdout, sep="\t")# index=False)
+        result.to_csv(sys.stdout, sep="\t")# index=False)
     else:
         from pathlib import Path
 
         p = Path(f)
         Path.mkdir(p.parent, exist_ok=True, parents=True)
 
-        gr.to_csv(str(p), sep="\t")
-
-
+        result.to_csv(str(p), sep="\t")
 

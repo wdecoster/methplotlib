@@ -10,13 +10,14 @@ python:
 
 before_install:
   - cp README.md README.rst
-  - pip install cython
+  - pip install cython pytest
 
 install:
   - pip install -e .
 
 script:
   - bash test/test.sh
+  - py.test tests/
 
 notifications:
   email: false

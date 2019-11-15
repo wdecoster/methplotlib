@@ -16,6 +16,7 @@ def get_args():
     parser.add_argument(
         "-b", "--bed", help="Bed file to aggregate modifications on.", required=True)
     parser.add_argument("methylation", nargs=2, help="Haplotype specific frequency files.")
+    parser.add_argument("-c", "--cutoff", help="FDR cutoff. Default: 0.05", default=0.05, type=float)
     parser.add_argument("-o", "--out", help="File to write results to. Default: stdout.", default="-")
     return parser.parse_args()
 
@@ -23,6 +24,7 @@ def get_args():
 if __name__ == '__main__':
 
     args = get_args()
+    cutoff = args.cutoff
 
     from methplotlib.helpers import methylation_pyranges_from_csv
 
@@ -35,6 +37,8 @@ if __name__ == '__main__':
     # df2 = pd.read_csv(args.methylation[1], sep="\t")
     bed = pr.read_bed(args.bed).merge()
     result = main(gr, gr2, bed)
+
+    result = result[result.ORFDR <= cutoff]
 
     f = args.out
 

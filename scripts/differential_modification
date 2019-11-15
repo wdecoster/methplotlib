@@ -16,6 +16,7 @@ def get_args():
         "-b", "--bed", help="Bed file to aggregate modifications on.", required=True)
     parser.add_argument("-A", "--Agroup", nargs='+', help="Frequencies of group A.")
     parser.add_argument("-B", "--Bgroup", nargs='+', help="Frequencies of group B.")
+    parser.add_argument("-c", "--cutoff", help="FDR cutoff. Default: 0.05", default=0.05, type=float)
     parser.add_argument("-o", "--out", help="File to write results to. Default: stdout.", default="-")
     return parser.parse_args()
 
@@ -26,8 +27,11 @@ if __name__ == '__main__':
     a_range = pr.concat([methylation_pyranges_from_csv(f) for f in args.Agroup])
     b_range = pr.concat([methylation_pyranges_from_csv(f) for f in args.Bgroup])
     bed = pr.read_bed(args.bed).merge()
+    cutoff = args.cutoff
 
     gr = main(a_range, b_range, bed)
+
+    gr = gr[gr.ORFDR <= cutoff]
 
     f = args.out
 

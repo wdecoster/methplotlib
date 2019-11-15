@@ -38,8 +38,8 @@ def merge_regions_with_bed(bed, a, b):
 
     return m
 
-def main(a, b, bed):
 
+def main(a, b, bed):
     """1. Find the regions in bed that overlaps either a or/and b.
 2. Sum methylations over regions in a/b that overlap bed.
 3. Do fisher_exact on the methylation frequencies."""

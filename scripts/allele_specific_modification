@@ -1,11 +1,7 @@
 #!/usr/bin/env python
-
-import pandas as pd
 from argparse import ArgumentParser
 import pyranges as pr
-from pyranges import PyRanges
-import numpy as np
-
+from methplotlib.helpers import methylation_pyranges_from_csv
 from methplotlib.differential.differential import main
 
 
@@ -15,38 +11,31 @@ def get_args():
     parser.add_argument(
         "-b", "--bed", help="Bed file to aggregate modifications on.", required=True)
     parser.add_argument("methylation", nargs=2, help="Haplotype specific frequency files.")
-    parser.add_argument("-c", "--cutoff", help="FDR cutoff. Default: 0.05", default=0.05, type=float)
-    parser.add_argument("-o", "--out", help="File to write results to. Default: stdout.", default="-")
+    parser.add_argument("-c", "--cutoff", help="FDR cutoff. Default: 0.05",
+                        default=0.05, type=float)
+    parser.add_argument(
+        "-o", "--out", help="File to write results to. Default: stdout.", default="-")
     return parser.parse_args()
 
 
 if __name__ == '__main__':
-
     args = get_args()
-    cutoff = args.cutoff
 
-    from methplotlib.helpers import methylation_pyranges_from_csv
-
-    f1, f2 = args.methylation
-
-    gr = methylation_pyranges_from_csv(f1)
-    gr2 = methylation_pyranges_from_csv(f2)
+    gr = methylation_pyranges_from_csv(args.methylation[0])
+    gr2 = methylation_pyranges_from_csv(args.methylation[1])
 
     bed = pr.read_bed(args.bed).merge()
     result = main(gr, gr2, bed)
 
-    result = result[result.ORFDR <= cutoff]
+    result = result[result.ORFDR <= args.cutoff]
 
-    f = args.out
-
-    if f == "-":
+    if args.out == "-":
         import sys
-        result.to_csv(sys.stdout, sep="\t")# index=False)
+        result.to_csv(sys.stdout, sep="\t")  # index=False)
     else:
         from pathlib import Path
 
-        p = Path(f)
+        p = Path(args.out)
         Path.mkdir(p.parent, exist_ok=True, parents=True)
 
         result.to_csv(str(p), sep="\t")
-

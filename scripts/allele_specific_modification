@@ -33,8 +33,6 @@ if __name__ == '__main__':
     gr = methylation_pyranges_from_csv(f1)
     gr2 = methylation_pyranges_from_csv(f2)
 
-    # df = pd.read_csv(args.methylation[0], sep="\t")
-    # df2 = pd.read_csv(args.methylation[1], sep="\t")
     bed = pr.read_bed(args.bed).merge()
     result = main(gr, gr2, bed)
 

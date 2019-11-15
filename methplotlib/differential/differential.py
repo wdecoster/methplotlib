@@ -21,16 +21,12 @@ def count_total_and_methylated(df):
     """For each region in bed, get sum of calls and methylated"""
 
     grpby = df.groupby("ID")
-    total = grpby.calls.sum()
-    methylated = grpby.methylated.sum()
-
-    chromosome = df.Chromosome.iloc[0]
-    start = grpby.Start.first()
-    end = grpby.End.first()
-    region_id = grpby.ID.first()
-
-    return pd.DataFrame({"Chromosome": chromosome, "Start": start, "End": end, "ID": region_id,
-                         "calls": total, "methylated": methylated})
+    return pd.DataFrame({"Chromosome": df.Chromosome.iloc[0],
+                         "Start": grpby.Start.first(),
+                         "End": grpby.End.first(),
+                         "ID": grpby.ID.first(),
+                         "calls": grpby.calls.sum(),
+                         "methylated": grpby.methylated.sum()})
 
 
 def merge_regions_with_bed(bed, a, b):

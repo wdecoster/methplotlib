@@ -1,7 +1,6 @@
 
 import pandas as pd
 import pyranges as pr
-from pyranges import PyRanges
 import numpy as np
 
 

@@ -7,9 +7,12 @@ import numpy as np
 
 def _methylated_and_freq_to_zero(df):
 
-    a_zero = df.Start == -1
+    only_in_bed = (df.methylated == -1) & (df.methylated_b == -1)
+    df = df[~only_in_bed]
+
+    a_zero = df.methylated == -1
     df.loc[a_zero, ["methylated", "calls"]] = 0
-    b_zero = df.Start_b == -1
+    b_zero = df.methylated_b == -1
     df.loc[b_zero, ["methylated_b", "calls_b"]] = 0
 
     return df
@@ -31,17 +34,27 @@ def count_total_and_methylated(df):
                          "calls": total, "methylated": methylated})
 
 
+def merge_regions_with_bed(bed, a, b):
+
+    a = bed.join(a, how="left").apply(count_total_and_methylated).drop(like="_b")
+    b = bed.join(b, how="left").apply(count_total_and_methylated).drop(like="_b")
+
+    m = a.join(b, how="outer")
+
+    return m
+
 def main(a, b, bed):
+
+    """1. Find the regions in bed that overlaps either a or/and b.
+2. Sum methylations over regions in a/b that overlap bed.
+3. Do fisher_exact on the methylation frequencies."""
 
     bed.ID = np.arange(len(bed))
 
     if "Strand" in bed:
         bed = bed.drop("Strand")
 
-    a = bed.join(a).apply(count_total_and_methylated).drop(like="_b")
-    b = bed.join(b).apply(count_total_and_methylated).drop(like="_b")
-
-    m = a.join(b, how="outer")
+    m = merge_regions_with_bed(bed, a, b)
 
     m = m.apply(_methylated_and_freq_to_zero).drop(like="(Start|End|ID)_b|ID")
 

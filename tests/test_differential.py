@@ -1,10 +1,13 @@
+from io import StringIO
+
 import pytest
 
 import pyranges as pr
 
 import pandas as pd
 
-from methplotlib.differential.differential import main
+
+from methplotlib.differential.differential import main, merge_regions_with_bed
 
 def old_method(a_range, b_range, bed):
 
@@ -74,4 +77,42 @@ def test_new_vs_old(pr1, pr2, bed, expected_result):
     assert (counts.calls_b == expected_result.d2.values).all()
     assert (counts.methylated == expected_result.n1.values).all()
     assert (counts.methylated_b == expected_result.n2.values).all()
+
+
+@pytest.fixture()
+def simple_bed():
+
+    gr = pr.PyRanges(chromosomes=[1, 1, 1, 1, 1], starts=[0, 10, 20, 30, 100], ends=[5, 15, 25, 35, 105])
+    gr.ID = list(range(len(gr)))
+    return gr
+
+
+@pytest.fixture()
+def simple_m1():
+
+    m1 = pr.PyRanges(chromosomes=[1, 1, 1, 1], starts=[0, 20, 30, 50], ends=[5, 25, 35, 55])
+    m1.calls = [1, 2, 3, 1]
+    m1.methylated = [0, 2, 0, 1]
+    return m1
+
+
+@pytest.fixture()
+def simple_m2():
+
+    m2 = pr.PyRanges(chromosomes=[1, 1, 1, 1, 1], starts=[0, 10, 30, 40, 55], ends=[5, 15, 35, 45, 55])
+    m2.calls = [1, 1, 2, 3, 5]
+    m2.methylated = [0, 0, 2, 0, 5]
+
+    return m2
+
+def test_simple(simple_bed, simple_m1, simple_m2):
+
+    print(simple_bed, simple_m1, simple_m2)
+    result = merge_regions_with_bed(simple_bed, simple_m1, simple_m2)
+    print(result)
+    # means that the joins were incorrect 
+    assert (result.Start != -1).all()
+
+
+
 

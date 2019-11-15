@@ -26,21 +26,18 @@ if __name__ == '__main__':
     a_range = pr.concat([methylation_pyranges_from_csv(f) for f in args.Agroup])
     b_range = pr.concat([methylation_pyranges_from_csv(f) for f in args.Bgroup])
     bed = pr.read_bed(args.bed).merge()
-    cutoff = args.cutoff
 
     gr = main(a_range, b_range, bed)
 
-    gr = gr[gr.ORFDR <= cutoff]
+    gr = gr[gr.ORFDR <= args.cutoff]
 
-    f = args.out
-
-    if f == "-":
+    if args.out == "-":
         import sys
         gr.to_csv(sys.stdout, sep="\t")  # index=False)
     else:
         from pathlib import Path
 
-        p = Path(f)
+        p = Path(args.out)
         Path.mkdir(p.parent, exist_ok=True, parents=True)
 
         gr.to_csv(str(p), sep="\t")

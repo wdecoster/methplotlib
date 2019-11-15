@@ -4,7 +4,6 @@ import pandas as pd
 from argparse import ArgumentParser
 import pyranges as pr
 from pyranges import PyRanges
-from scipy.stats import fisher_exact
 import numpy as np
 
 from methplotlib.differential.differential import main

@@ -11,6 +11,7 @@ setup(
     name='methplotlib',
     version=__version__,
     description='Plot methylation data obtained from nanopolish',
+    package_data={"methplotlib": ["examples/*.gz"]},
     long_description=open(path.join(here, "README.md")).read(),
     long_description_content_type="text/markdown",
     scripts=["scripts/differential_modification", "scripts/allele_specific_modification"],

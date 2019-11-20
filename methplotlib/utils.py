@@ -39,14 +39,14 @@ def get_args():
     parser.add_argument("-m", "--methylation",
                         nargs='+',
                         help="nanopolish methylation calls or frequency output",
-                        required=True)
+                        required=True if not "--example" in sys.argv else False)
     parser.add_argument("-n", "--names",
                         nargs='+',
                         help="names of datasets in --methylation",
-                        required=True)
+                        required=True if not "--example" in sys.argv else False)
     parser.add_argument("-w", "--window",
                         help="window (region) to which the visualisation has to be restricted",
-                        required=True)
+                        required=True if not "--example" in sys.argv else False)
     parser.add_argument("-g", "--gtf",
                         help="add annotation based on a gtf file matching to your reference genome")
     parser.add_argument("-b", "--bed",
@@ -61,8 +61,11 @@ def get_args():
                         help="When plotting frequencies points are averaged using a rolling window",
                         type=int,
                         default=5)
+    parser.add_argument("--example",
+                        action="store_true",
+                        help="Show example command and exit.")
     args = parser.parse_args()
-    if not len(args.names) == len(args.methylation):
+    if not args.example and not len(args.names) == len(args.methylation):
         sys.exit("INPUT ERROR: Expecting the same number of names as datasets!")
     return args
 

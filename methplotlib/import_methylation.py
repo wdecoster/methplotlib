@@ -27,7 +27,9 @@ def read_meth(filename, name, window, smoothen=5):
         table = pd.read_csv(filename, sep="\t")
         gr = pr.PyRanges(table.rename(columns={"start": "Start", "chromosome": "Chromosome", "end": "End", "Strand": "strand"}))
         logging.info("Read the file in a dataframe.")
-        gr = gr[window.chromosome, window.begin:window.end]
+
+        if window:
+            gr = gr[window.chromosome, window.begin:window.end]
         gr.pos = np.floor(gr.drop().df[["Start", "End"]].mean(axis=1))
         table = gr.df
 

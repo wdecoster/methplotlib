@@ -17,6 +17,7 @@ install:
 
 script:
   - bash examples/test.sh
+  - methplotlib --example
   - py.test tests/
 
 notifications:

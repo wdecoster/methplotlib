@@ -124,5 +124,5 @@ def parse_bed(bed, window):
     gr = pr.read_bed(bed)[window.chromosome, window.begin:window.end]
     df = gr.unstrand().df
     df = df.drop(columns="Chromosome Score".split())
-    return df.itertuples(index=False, name=False)
+    return df.itertuples(index=False, name=None)
 

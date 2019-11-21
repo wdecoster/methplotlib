@@ -18,14 +18,14 @@ def main():
         bed = pkg_resources.resource_filename("methplotlib", "examples/DNAse_cluster.bed.gz")
         annotation = pkg_resources.resource_filename("methplotlib", "examples/g38_locus.gtf.gz")
 
-        example = f"""
+        example = """
 methplotlib -m {meth} \\
                {meth_freq} \\
             -n calls frequencies \\
             -w chr7:5,525,542-5,543,028 \\
             -g {annotation} \\
             --simplify \\
-            -b {bed}""".strip()
+            -b {bed}""".strip().format(**locals())
 
         print(example)
         sys.exit(0)

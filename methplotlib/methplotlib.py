@@ -154,6 +154,4 @@ def qc_plots(meth_data, window):
 
 
 if __name__ == '__main__':
-
-
     main()

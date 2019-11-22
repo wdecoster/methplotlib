@@ -34,8 +34,8 @@ Arguments:
 ## Snakemake workflow
 For streamlining nanopolish a Snakefile is included (using snakemake). The workflow uses a config file, of which an example is in this repository.
 
-## Test data
-The `test` folder contains calls and frequencies for the human ACTB gene from PromethION sequencing of NA19240. An example command is available.
+## Example data
+The `examples` folder contains calls and frequencies for the human ACTB gene from PromethION sequencing of NA19240. An example command is available.
 
 ## Companion scripts
 The `scripts` folder contains scripts for phasing modification calls in haplotypes based on [WhatsHap](https://whatshap.readthedocs.io/en/latest/) phasing, allele specific modification testing for phased data and differential modification testing across subjects.

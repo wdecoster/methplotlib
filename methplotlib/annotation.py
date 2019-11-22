@@ -1,4 +1,5 @@
 import pandas as pd
+import pyranges as pr
 import itertools
 import sys
 from plotly.colors import DEFAULT_PLOTLY_COLORS as plcolors
@@ -120,8 +121,8 @@ def assign_colors_to_genes(transcripts):
 
 def parse_bed(bed, window):
     logging.info("Parsing BED file")
-    df = pd.read_csv(bed, sep="\t", names=['chromosome', 'begin', 'end', 'name', 'score', 'strand'])
-    return df.loc[df['begin'].between(window.begin, window.end)
-                  | df['end'].between(window.begin, window.end)] \
-        .drop(columns=['chromosome', 'score', 'strand']) \
-        .itertuples(index=False, name=None)
+    gr = pr.read_bed(bed)[window.chromosome, window.begin:window.end]
+    df = gr.unstrand().df
+    df = df.drop(columns=["Chromosome", "Score"])
+    return df.itertuples(index=False, name=None)
+

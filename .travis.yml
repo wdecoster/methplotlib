@@ -16,7 +16,8 @@ install:
   - pip install -e .
 
 script:
-  - bash test/test.sh
+  - bash examples/test.sh
+  - methplotlib --example > extra_script.sh; bash extra_script.sh
   - py.test tests/
 
 notifications:

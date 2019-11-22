@@ -25,7 +25,8 @@ methplotlib -m {meth} \\
             -w chr7:5,525,542-5,543,028 \\
             -g {annotation} \\
             --simplify \\
-            -b {bed}""".strip().format(meth=meth, meth_freq=meth_freq, annotation=annotation, bed=bed)
+            -b {bed}""".strip().format(meth=meth, meth_freq=meth_freq,
+                                       annotation=annotation, bed=bed)
 
         print(example)
         sys.exit(0)

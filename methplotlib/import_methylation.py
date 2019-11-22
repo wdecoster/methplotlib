@@ -25,7 +25,8 @@ def read_meth(filename, name, window, smoothen=5):
     """
     try:
         table = pd.read_csv(filename, sep="\t")
-        gr = pr.PyRanges(table.rename(columns={"start": "Start", "chromosome": "Chromosome", "end": "End", "Strand": "strand"}))
+        gr = pr.PyRanges(table.rename(columns={"start": "Start", "chromosome": "Chromosome",
+                                               "end": "End", "Strand": "strand"}))
         logging.info("Read the file in a dataframe.")
 
         if window:

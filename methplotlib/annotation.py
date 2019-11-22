@@ -125,4 +125,3 @@ def parse_bed(bed, window):
     df = gr.unstrand().df
     df = df.drop(columns=["Chromosome", "Score"])
     return df.itertuples(index=False, name=None)
-

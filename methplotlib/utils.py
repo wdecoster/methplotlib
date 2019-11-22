@@ -39,14 +39,14 @@ def get_args():
     parser.add_argument("-m", "--methylation",
                         nargs='+',
                         help="nanopolish methylation calls or frequency output",
-                        required=True if not "--example" in sys.argv else False)
+                        required=True if "--example" not in sys.argv else False)
     parser.add_argument("-n", "--names",
                         nargs='+',
                         help="names of datasets in --methylation",
-                        required=True if not "--example" in sys.argv else False)
+                        required=True if "--example" not in sys.argv else False)
     parser.add_argument("-w", "--window",
                         help="window (region) to which the visualisation has to be restricted",
-                        required=True if not "--example" in sys.argv else False)
+                        required=True if "--example" not in sys.argv else False)
     parser.add_argument("-g", "--gtf",
                         help="add annotation based on a gtf file matching to your reference genome")
     parser.add_argument("-b", "--bed",

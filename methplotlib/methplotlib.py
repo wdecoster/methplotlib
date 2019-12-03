@@ -75,7 +75,7 @@ def meth_browser(meth_data, window, gtf=False, bed=False, simplify=False, split=
                     title="Modified <br> frequency")
             else:
                 fig["layout"]["yaxis{}".format(position)].update(
-                    title="Modification <br> probability")
+                    title="Reads")
         fig["layout"].update(showlegend=False)
     else:
         num_methrows = 4

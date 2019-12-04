@@ -5,6 +5,8 @@ from methplotlib.version import __version__
 from datetime import datetime as dt
 from time import time
 import logging
+import binascii
+import gzip
 
 
 class Region(object):
@@ -81,3 +83,29 @@ def init_logs(args):
         level=logging.INFO)
     logging.info('methplotlib {} started.\nPython version is: {}\nArguments are: {}'.format(
         __version__, sys.version.replace('\n', ' '), args))
+
+
+def is_gz_file(filepath):
+    with open(filepath, 'rb') as test_f:
+        return binascii.hexlify(test_f.read(2)) == b'1f8b'
+
+
+def file_sniffer(filename):
+    """
+    Takes in a filename and tries to guess the input file type
+    """
+    if is_gz_file(filename):
+        header = gzip.open(filename, 'rt').readline()
+    else:
+        header = open(filename, 'r').readline()
+    if "GMM_anova_pvalue" in header:
+        return "nanocompore"
+    if "log_lik_methylated" in header:
+        if "PS" in header:
+            return "nanopolish_phased"
+        else:
+            return "nanopolish_call"
+    if "num_motifs_in_group" in header:
+        return "nanopolish_freq"
+    else:
+        sys.exit("\n\n\nInput file {} not recognized!\n".format(filename))

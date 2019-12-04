@@ -89,17 +89,17 @@ def bed_annotation(bed, window):
 def methylation(meth_data):
     """
     Call function get_data to parse files from nanopolish,
-     either the methylation calls (raw) or those from calculate_methylation_frequency
-    Return per dataset a list of one (if frequency) or lots of (if raw) plotly traces
+     either the methylation calls (nanopolish_call) or those from calculate_methylation_frequency
+    Return per dataset a list of one (if frequency) or lots of (if nanopolish_call) plotly traces
     """
     traces = []
     types = []
     names = []
     split = False
     for meth in meth_data:
-        if meth.data_type in ['raw', 'phased']:
+        if meth.data_type in ['nanopolish_call', 'nanopolish_phased']:
             traces.append(
-                make_per_read_meth_traces(meth.table, phased=meth.data_type == 'phased'))
+                make_per_read_meth_traces(meth.table, phased=meth.data_type == 'nanopolish_phased'))
             split = True
         else:
             traces.append(

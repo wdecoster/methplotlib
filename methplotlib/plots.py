@@ -120,7 +120,7 @@ def make_per_read_meth_traces(table, phased=False, max_coverage=100):
     """Make traces for each read"""
     minmax_table = find_min_and_max_pos_per_read(table, phased=phased)
     y_pos_dict = assign_y_height_per_read(minmax_table, phased=phased, max_coverage=max_coverage)
-    table.loc[:, "log_lik_ratio"] = rescale_log_likelihood_ratio(table["log_lik_ratio"].copy())
+    table.loc[:, "llr_scaled"] = rescale_log_likelihood_ratio(table["log_lik_ratio"].copy())
     traces = []
     hidden_reads = 0
     for read in table["read_name"].unique():
@@ -252,7 +252,7 @@ def make_per_position_likelihood_trace(read_table, y_pos):
                       text=read_table['log_lik_ratio'],
                       hoverinfo="text",
                       marker=dict(size=4,
-                                  color=read_table['log_lik_ratio'],
+                                  color=read_table['llr_scaled'],
                                   cmid=0,
                                   colorscale=old_RdBu,
                                   showscale=False))

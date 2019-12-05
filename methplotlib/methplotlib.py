@@ -25,8 +25,9 @@ methplotlib -m {meth} \\
             -w chr7:5,525,542-5,543,028 \\
             -g {annotation} \\
             --simplify \\
-            -b {bed}""".strip().format(meth=meth, meth_freq=meth_freq,
-                                       annotation=annotation, bed=bed)
+            -b {bed} \\
+            -o '{{region}}/example.html'""".strip().format(meth=meth, meth_freq=meth_freq,
+                                                         annotation=annotation, bed=bed)
 
         print(example)
         sys.exit(0)
@@ -45,11 +46,12 @@ methplotlib -m {meth} \\
                      bed=args.bed,
                      simplify=args.simplify,
                      split=args.split,
+                     outfile=args.outfile
                      )
     logging.info("Finished!")
 
 
-def meth_browser(meth_data, window, gtf=False, bed=False, simplify=False, split=False):
+def meth_browser(meth_data, window, gtf=False, bed=False, simplify=False, split=False, outfile=None):
     """
     meth_Data is a list of Methylation objects from the import_methylation submodule
     annotation is optional and is a gtf or bed file
@@ -111,11 +113,24 @@ def meth_browser(meth_data, window, gtf=False, bed=False, simplify=False, split=
                                   separatethousands=True,
                                   range=[window.begin, window.end])
 
-    with open("methylation_browser_{}.html".format(window.string), 'w') as output:
-        output.write(plotly.offline.plot(fig,
-                                         output_type="div",
-                                         show_link=False,
-                                         include_plotlyjs='cdn'))
+    if outfile is None:
+        outfile = "methylation_browser_{}.html".format(window.string)
+    else:
+        from pathlib import Path
+
+        outfile = outfile.format(region=window.string)
+        p = Path(outfile)
+        Path.mkdir(p.parent, exist_ok=True, parents=True)
+
+
+    if outfile.endswith(".html"):
+        with open(outfile, "w+") as output:
+            output.write(plotly.offline.plot(fig,
+                                            output_type="div",
+                                            show_link=False,
+                                            include_plotlyjs='cdn'))
+    else:
+        fig.write_image(outfile)
 
 
 def create_subplots(num_methrows, split, names=None):

@@ -125,7 +125,7 @@ def make_per_read_meth_traces(table, phased=False, max_coverage=100):
     table.loc[:, "llr_scaled"] = rescale_log_likelihood_ratio(table["log_lik_ratio"].copy())
     traces = []
     hidden_reads = 0
-    for index, read in enumerate(table["read_name"].unique()):
+    for read in table["read_name"].unique():
         strand = table.loc[table["read_name"] == read, "strand"].values[0]
         if phased:
             phase = table.loc[table["read_name"] == read, "HP"].values[0]

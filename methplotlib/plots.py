@@ -32,7 +32,7 @@ def gtf_annotation(gtf, window, simplify=False):
     annotation = parse_gtf(gtf, window, simplify)
     if annotation:
         for y_pos, transcript in enumerate(annotation):
-            line = make_per_gene_line_trace(transcript, window, y_pos)
+            line = make_per_gene_annot_line_trace(transcript, window, y_pos)
             exons = [make_per_exon_arrow_trace(transcript, begin, end, y_pos)
                      for begin, end in transcript.exon_tuples
                      if window.begin < begin and window.end > end]
@@ -42,7 +42,7 @@ def gtf_annotation(gtf, window, simplify=False):
         return result, 0
 
 
-def make_per_gene_line_trace(transcript, window, y_pos):
+def make_per_gene_annot_line_trace(transcript, window, y_pos):
     """Generate a line trace for the gene
 
     Trace can get limited by the window sizes

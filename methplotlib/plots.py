@@ -1,6 +1,7 @@
 import plotly.graph_objs as go
 from methplotlib.annotation import parse_gtf, parse_bed
 import sys
+from sklearn.preprocessing import MinMaxScaler
 
 
 class DataTraces(object):
@@ -119,7 +120,7 @@ def make_per_read_meth_traces(table, phased=False, max_coverage=100):
     """Make traces for each read"""
     minmax_table = find_min_and_max_pos_per_read(table, phased=phased)
     y_pos_dict = assign_y_height_per_read(minmax_table, phased=phased, max_coverage=max_coverage)
-    ratio_cap = min(abs(table["log_lik_ratio"].min()), abs(table["log_lik_ratio"].max()))
+    table.loc[:, "log_lik_ratio"] = rescale_log_likelihood_ratio(table["log_lik_ratio"].copy())
     traces = []
     hidden_reads = 0
     for read in table["read_name"].unique():
@@ -133,12 +134,12 @@ def make_per_read_meth_traces(table, phased=False, max_coverage=100):
                 make_per_read_line_trace(read_range=minmax_table.loc[read],
                                          y_pos=y_pos_dict[read],
                                          strand=strand,
-                                         phase=phase))
+                                         phase=phase)
+            )
             traces.append(
                 make_per_position_likelihood_trace(read_table=table.loc[table["read_name"] == read],
-                                                   y_pos=y_pos_dict[read],
-                                                   minratio=-ratio_cap,
-                                                   maxratio=ratio_cap))
+                                                   y_pos=y_pos_dict[read])
+            )
         except KeyError:
             hidden_reads += 1
             continue
@@ -196,6 +197,20 @@ def assign_y_height_per_read(df, phased=False, max_coverage=100):
     return y_pos
 
 
+def rescale_log_likelihood_ratio(llr):
+    """
+    Rescale log likelihood ratios
+
+    positive ratios between 0 and 1
+    negative ratios between -1 and 0
+    """
+    scaler = MinMaxScaler(feature_range=(0, 1))
+    llr[llr > 0] = scaler.fit_transform(llr[llr > 0].values.reshape(-1, 1))
+    scaler = MinMaxScaler(feature_range=(-1, 0))
+    llr[llr < 0] = scaler.fit_transform(llr[llr < 0].values.reshape(-1, 1))
+    return llr
+
+
 def make_per_read_line_trace(read_range, y_pos, strand, phase=None):
     """Make a grey line trace for a single read,
     with black arrow symbols on the edges indicating strand"""
@@ -221,7 +236,7 @@ def make_per_read_line_trace(read_range, y_pos, strand, phase=None):
                                             color='black')))
 
 
-def make_per_position_likelihood_trace(read_table, y_pos, minratio, maxratio):
+def make_per_position_likelihood_trace(read_table, y_pos):
     """Make dots trace per read indicating with the RdBu colorscale from plotly 3.0.0, showing the
     log likelihood of having methylation here"""
     old_RdBu = [[0, 'rgb(5,10,172)'],
@@ -238,7 +253,6 @@ def make_per_position_likelihood_trace(read_table, y_pos, minratio, maxratio):
                       hoverinfo="text",
                       marker=dict(size=4,
                                   color=read_table['log_lik_ratio'],
-                                  cmin=minratio,
-                                  cmax=maxratio,
+                                  cmid=0,
                                   colorscale=old_RdBu,
                                   showscale=False))

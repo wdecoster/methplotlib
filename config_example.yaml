@@ -1,3 +1,6 @@
+prefix:
+  "analysis_name"
+
 genome:
     /path/to/database/genome.fa.gz
 

@@ -2,6 +2,7 @@ import plotly.graph_objs as go
 from methplotlib.annotation import parse_gtf, parse_bed
 import sys
 from sklearn.preprocessing import MinMaxScaler
+import pandas as pd
 
 
 class DataTraces(object):
@@ -119,11 +120,12 @@ def methylation(meth_data):
 def make_per_read_meth_traces(table, phased=False, max_coverage=100):
     """Make traces for each read"""
     minmax_table = find_min_and_max_pos_per_read(table, phased=phased)
-    y_pos_dict = assign_y_height_per_read(minmax_table, phased=phased, max_coverage=max_coverage)
+    df_heights = assign_y_height_per_read(minmax_table, phased=phased, max_coverage=max_coverage)
+    table = table.join(df_heights, on="read_name")
     table.loc[:, "llr_scaled"] = rescale_log_likelihood_ratio(table["log_lik_ratio"].copy())
     traces = []
     hidden_reads = 0
-    for read in table["read_name"].unique():
+    for index, read in enumerate(table["read_name"].unique()):
         strand = table.loc[table["read_name"] == read, "strand"].values[0]
         if phased:
             phase = table.loc[table["read_name"] == read, "HP"].values[0]
@@ -132,13 +134,9 @@ def make_per_read_meth_traces(table, phased=False, max_coverage=100):
         try:
             traces.append(
                 make_per_read_line_trace(read_range=minmax_table.loc[read],
-                                         y_pos=y_pos_dict[read],
+                                         y_pos=df_heights.loc[read, 'height'],
                                          strand=strand,
                                          phase=phase)
-            )
-            traces.append(
-                make_per_position_likelihood_trace(read_table=table.loc[table["read_name"] == read],
-                                                   y_pos=y_pos_dict[read])
             )
         except KeyError:
             hidden_reads += 1
@@ -146,6 +144,9 @@ def make_per_read_meth_traces(table, phased=False, max_coverage=100):
     if hidden_reads:
         sys.stderr.write("Warning: hiding {} reads because coverage above {}x.\n".format(
             hidden_reads, max_coverage))
+    traces.append(
+        make_per_position_likelihood_scatter(read_table=table)
+    )
     return traces
 
 
@@ -167,7 +168,7 @@ def find_min_and_max_pos_per_read(table, phased):
         return mm_table
 
 
-def assign_y_height_per_read(df, phased=False, max_coverage=100):
+def assign_y_height_per_read(df, phased=False, max_coverage=1000):
     """Assign height of the read in the per read traces
 
     Gets a dataframe of read_name, posmin and posmax.
@@ -194,7 +195,9 @@ def assign_y_height_per_read(df, phased=False, max_coverage=100):
                 layer.append(read.posmax)
                 y_pos[read.Index] = y
                 break
-    return y_pos
+    return pd.DataFrame({'read': list(y_pos.keys()),
+                         'height': list(y_pos.values())}) \
+        .set_index('read')
 
 
 def rescale_log_likelihood_ratio(llr):
@@ -236,9 +239,10 @@ def make_per_read_line_trace(read_range, y_pos, strand, phase=None):
                                             color='black')))
 
 
-def make_per_position_likelihood_trace(read_table, y_pos):
-    """Make dots trace per read indicating with the RdBu colorscale from plotly 3.0.0, showing the
-    log likelihood of having methylation here"""
+def make_per_position_likelihood_scatter(read_table, maxval=0.75):
+    """Make scatter plot per CpG per read
+    with the RdBu colorscale from plotly 3.0.0, showing the
+    scaled log likelihood of having methylation here"""
     old_RdBu = [[0, 'rgb(5,10,172)'],
                 [0.35, 'rgb(106,137,247)'],
                 [0.5, 'rgb(190,190,190)'],
@@ -246,13 +250,21 @@ def make_per_position_likelihood_trace(read_table, y_pos):
                 [0.7, 'rgb(230,145,90)'],
                 [1, 'rgb(178,10,28)']]
     return go.Scatter(x=read_table['pos'],
-                      y=[y_pos] * len(read_table),
+                      y=read_table['height'],
                       mode='markers',
                       showlegend=False,
                       text=read_table['log_lik_ratio'],
                       hoverinfo="text",
                       marker=dict(size=4,
                                   color=read_table['llr_scaled'],
-                                  cmid=0,
+                                  cmin=-maxval,
+                                  cmax=maxval,
                                   colorscale=old_RdBu,
-                                  showscale=False))
+                                  showscale=True,
+                                  colorbar=dict(title="Modification likelihood",
+                                                titleside="right",
+                                                tickvals=[-maxval, 0, maxval],
+                                                ticktext=["Likely unmodified",
+                                                          "0", "Likely modified"],
+                                                ticks="outside"))
+                      )

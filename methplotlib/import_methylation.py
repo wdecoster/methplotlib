@@ -58,7 +58,7 @@ def parse_nanopolish(filename, file_type, name, window, smoothen=5):
             data_type=file_type,
             name=name,
             called_sites=len(table))
-    if file_type == ["nanopolish_freq"]:
+    if file_type == "nanopolish_freq":
         called_sites = table.called_sites
         table = table.drop(columns=['Start', 'End', 'num_motifs_in_group',
                                     'called_sites', 'called_sites_methylated',

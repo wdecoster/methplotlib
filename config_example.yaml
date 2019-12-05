@@ -1,5 +1,5 @@
 prefix:
-  "analysis_name"
+  "analysis_name" # or /path/where/you/want/the/results
 
 genome:
     /path/to/database/genome.fa.gz

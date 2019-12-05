@@ -70,7 +70,7 @@ def parse_nanopolish(filename, file_type, name, window, smoothen=5):
             .mean()
             .rolling(window=smoothen, center=True)
             .mean(),
-            data_type="frequency",
+            data_type=file_type,
             name=name,
             called_sites=called_sites.sum())
 

@@ -70,12 +70,12 @@ def meth_browser(meth_data, window, gtf=False, bed=False, simplify=False, split=
         for position, (sample_traces, sample_type) in enumerate(meth_traces, start=1):
             for meth_trace in sample_traces:
                 fig.append_trace(trace=meth_trace, row=position, col=1)
-            if sample_type == 'frequency':
+            if sample_type == 'nanopolish_freq':
                 fig["layout"]["yaxis{}".format(position)].update(
                     title="Modified <br> frequency")
             else:
                 fig["layout"]["yaxis{}".format(position)].update(
-                    title="Modification <br> probability")
+                    title="Reads")
         fig["layout"].update(showlegend=False)
     else:
         num_methrows = 4
@@ -141,16 +141,17 @@ def create_subplots(num_methrows, split, names=None):
 def qc_plots(meth_data, window):
     with open("qc_report_{}.html".format(window.string), 'w') as qc_report:
         qc_report.write(qc.num_sites_bar(meth_data))
-        if len([m for m in meth_data if m.data_type == "frequency"]) > 0:
+        if len([m for m in meth_data if m.data_type == "nanopolish_freq"]) > 0:
             data = [m.table.rename({"methylated_frequency": m.name}, axis='columns')
-                    for m in meth_data if m.data_type == "frequency"]
+                    for m in meth_data if m.data_type == "nanopolish_freq"]
             full = data[0].join(data[1:]).dropna(how="any", axis="index")
             qc_report.write(qc.modified_fraction_histogram(full))
-        if len([m for m in meth_data if m.data_type == "frequency"]) > 2:
+        if len([m for m in meth_data if m.data_type == "nanopolish_freq"]) > 2:
             qc_report.write(qc.pairwise_correlation_plot(full))
             qc_report.write(qc.pca(full))
             qc_report.write(qc.global_box(data))
-        if len([m for m in meth_data if m.data_type in ["raw", "phased"]]) > 2:
+        if len([m for m in meth_data
+                if m.data_type in ["nanopolish_call", "nanopolish_phased"]]) > 2:
             pass
 
 

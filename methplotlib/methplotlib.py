@@ -38,7 +38,7 @@ methplotlib -m {meth} \\
         logging.info("Processing {}".format(window.string))
         meth_data = get_data(args.methylation, args.names, window, args.smooth)
         logging.info("Collected methylation data for {} datasets".format(len(meth_data)))
-        qc_plots(meth_data, window)
+        qc_plots(meth_data, window, qcpath=args.qcfile, outpath=args.outfile)
         logging.info("Created QC plots")
         meth_browser(meth_data=meth_data,
                      window=window,
@@ -153,8 +153,22 @@ def create_subplots(num_methrows, split, names=None):
         )
 
 
-def qc_plots(meth_data, window):
-    with open("qc_report_{}.html".format(window.string), 'w') as qc_report:
+def qc_plots(meth_data, window, qcpath=None, outpath=None):
+
+    if qcpath is None and outpath is None:
+        outfile = "qc_report_{}.html".format(window.string)
+    elif qcpath is None:
+        from pathlib import Path, PosixPath
+        p = Path(outpath)
+        Path.mkdir(p.parent, exist_ok=True, parents=True)
+        outfile = p.parent / PosixPath("qc_" + p.stem + ".html")
+    else:
+        from pathlib import Path
+        p = Path(qcpath)
+        Path.mkdir(p.parent, exist_ok=True, parents=True)
+        outfile = qcpath
+
+    with open(outfile, 'w') as qc_report:
         qc_report.write(qc.num_sites_bar(meth_data))
         if len([m for m in meth_data if m.data_type == "frequency"]) > 0:
             data = [m.table.rename({"methylated_frequency": m.name}, axis='columns')

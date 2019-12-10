@@ -161,7 +161,7 @@ def qc_plots(meth_data, window, qcpath=None, outpath=None):
         from pathlib import Path, PosixPath
         p = Path(outpath)
         Path.mkdir(p.parent, exist_ok=True, parents=True)
-        outfile = p.parent / PosixPath("qc_" + p.stem + ".html")
+        outfile = str(p.parent / PosixPath("qc_" + p.stem + ".html"))
     else:
         from pathlib import Path
         p = Path(qcpath)

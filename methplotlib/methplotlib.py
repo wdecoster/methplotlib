@@ -27,7 +27,7 @@ methplotlib -m {meth} \\
             --simplify \\
             -b {bed} \\
             -o '{{region}}/example.html'""".strip().format(meth=meth, meth_freq=meth_freq,
-                                                         annotation=annotation, bed=bed)
+                                                           annotation=annotation, bed=bed)
 
         print(example)
         sys.exit(0)
@@ -51,7 +51,8 @@ methplotlib -m {meth} \\
     logging.info("Finished!")
 
 
-def meth_browser(meth_data, window, gtf=False, bed=False, simplify=False, split=False, outfile=None):
+def meth_browser(meth_data, window, gtf=False, bed=False,
+                 simplify=False, split=False, outfile=None):
     """
     meth_Data is a list of Methylation objects from the import_methylation submodule
     annotation is optional and is a gtf or bed file

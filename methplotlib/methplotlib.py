@@ -144,7 +144,8 @@ def create_subplots(num_methrows, split, names=None):
             shared_xaxes=True,
             specs=[[{}] for i in range(num_methrows + 1)],
             print_grid=False,
-            subplot_titles=names
+            subplot_titles=names,
+            vertical_spacing=0.1
         )
     else:
         return plotly.subplots.make_subplots(
@@ -152,7 +153,8 @@ def create_subplots(num_methrows, split, names=None):
             cols=1,
             shared_xaxes=True,
             specs=[[{'rowspan': num_methrows}], [None], [None], [None], [{}], ],
-            print_grid=False
+            print_grid=False,
+            vertical_spacing=0.1
         )
 
 

@@ -67,10 +67,16 @@ def get_args():
                         action="store_true",
                         help="Show example command and exit.")
     parser.add_argument("-o", "--outfile",
-                        help="File to write results to. Default: methylation_browser_{chromosome}_{start}_{end}.html. Use {region} as a shorthand for {chromosome}_{start}_{end} in the filename. Missing paths will be created.")
-
+                        help="File to write results to. "
+                             "Default: methylation_browser_{chr}_{start}_{end}.html. "
+                             "Use {region} as a shorthand for {chr}_{start}_{end} in the filename. "
+                             "Missing paths will be created.")
     parser.add_argument("-q", "--qcfile",
-                        help="File to write the qc report to. Default: The path in outfile prefixed with qc_, if no outfile is given qc_report_methylation_browser_{chromosome}_{start}_{end}.html. Use {region} as a shorthand for {chromosome}_{start}_{end} in the filename. Missing paths will be created.")
+                        help="File to write the qc report to. "
+                             "Default: The path in outfile prefixed with qc_, "
+                             "default is qc_report_methylation_browser_{chr}_{start}_{end}.html. "
+                             "Use {region} as a shorthand for {chr}_{start}_{end} in the filename. "
+                             "Missing paths will be created.")
 
     args = parser.parse_args()
     if not args.example and not len(args.names) == len(args.methylation):

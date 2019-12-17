@@ -88,7 +88,7 @@ def bed_annotation(bed, window):
             for (begin, end, name) in parse_bed(bed, window)]
 
 
-def methylation(meth_data):
+def methylation(meth_data, dotsize=4):
     """
     Call function get_data to parse files from nanopolish,
      either the methylation calls (nanopolish_call) or those from calculate_methylation_frequency
@@ -101,7 +101,10 @@ def methylation(meth_data):
     for meth in meth_data:
         if meth.data_type in ['nanopolish_call', 'nanopolish_phased']:
             traces.append(
-                make_per_read_meth_traces(meth.table, phased=meth.data_type == 'nanopolish_phased'))
+                make_per_read_meth_traces(table=meth.table,
+                                          phased=meth.data_type == 'nanopolish_phased',
+                                          dotsize=dotsize)
+            )
             split = True
         else:
             traces.append(
@@ -117,7 +120,7 @@ def methylation(meth_data):
                       split=split)
 
 
-def make_per_read_meth_traces(table, phased=False, max_coverage=100):
+def make_per_read_meth_traces(table, phased=False, max_coverage=100, dotsize=4):
     """Make traces for each read"""
     minmax_table = find_min_and_max_pos_per_read(table, phased=phased)
     df_heights = assign_y_height_per_read(minmax_table, phased=phased, max_coverage=max_coverage)
@@ -145,7 +148,7 @@ def make_per_read_meth_traces(table, phased=False, max_coverage=100):
         sys.stderr.write("Warning: hiding {} reads because coverage above {}x.\n".format(
             hidden_reads, max_coverage))
     traces.append(
-        make_per_position_likelihood_scatter(read_table=table)
+        make_per_position_likelihood_scatter(read_table=table, dotsize=dotsize)
     )
     return traces
 
@@ -239,7 +242,7 @@ def make_per_read_line_trace(read_range, y_pos, strand, phase=None):
                                             color='black')))
 
 
-def make_per_position_likelihood_scatter(read_table, maxval=0.75):
+def make_per_position_likelihood_scatter(read_table, maxval=0.75, dotsize=4):
     """Make scatter plot per CpG per read
     with the RdBu colorscale from plotly 3.0.0, showing the
     scaled log likelihood of having methylation here"""
@@ -255,7 +258,7 @@ def make_per_position_likelihood_scatter(read_table, maxval=0.75):
                       showlegend=False,
                       text=read_table['log_lik_ratio'],
                       hoverinfo="text",
-                      marker=dict(size=4,
+                      marker=dict(size=dotsize,
                                   color=read_table['llr_scaled'],
                                   cmin=-maxval,
                                   cmax=maxval,

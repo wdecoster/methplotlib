@@ -45,13 +45,14 @@ methplotlib -m {meth} \\
                      bed=args.bed,
                      simplify=args.simplify,
                      split=args.split,
-                     outfile=args.outfile
+                     outfile=args.outfile,
+                     dotsize=args.dotsize
                      )
     logging.info("Finished!")
 
 
-def meth_browser(meth_data, window, gtf=False, bed=False,
-                 simplify=False, split=False, outfile=None):
+def meth_browser(meth_data, window, gtf=False, bed=False, simplify=False,
+                 split=False, outfile=None, dotsize=4):
     """
     meth_Data is a list of Methylation objects from the import_methylation submodule
     annotation is optional and is a gtf or bed file
@@ -62,7 +63,7 @@ def meth_browser(meth_data, window, gtf=False, bed=False,
      then 4/5 of the browser is used for overlayed samples and one for gtf annotation
     the trace to be used for annotation is thus always methrows + 1
     """
-    meth_traces = plots.methylation(meth_data)
+    meth_traces = plots.methylation(meth_data, dotsize=dotsize)
     logging.info("Prepared methylation traces.")
     if split or meth_traces.split:
         num_methrows = len(meth_data)

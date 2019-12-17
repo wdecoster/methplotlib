@@ -63,6 +63,10 @@ def get_args():
                         help="When plotting frequencies points are averaged using a rolling window",
                         type=int,
                         default=5)
+    parser.add_argument("--dotsize",
+                        help="Control the size of dots in the per read plots",
+                        type=int,
+                        default=4)
     parser.add_argument("--example",
                         action="store_true",
                         help="Show example command and exit.")

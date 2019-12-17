@@ -127,7 +127,7 @@ def meth_browser(meth_data, window, gtf=False, bed=False, simplify=False,
         write_html_output(fig, outfile)
     else:
         try:
-            fig.write_image(outfile, scale=5)
+            fig.write_image(outfile)
         except ValueError as e:
             sys.stderr.write("\n\nERROR: creating the image in this file format failed.\n")
             sys.stderr.write("ERROR: creating in default html format instead.\n")

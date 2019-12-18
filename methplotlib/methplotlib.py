@@ -59,10 +59,13 @@ def meth_browser(meth_data, window, gtf=False, bed=False, simplify=False,
             if sample_type == 'nanopolish_freq':
                 fig["layout"]["yaxis{}".format(position)].update(
                     title="Modified <br> frequency")
+            elif sample_type == 'nanocompore':
+                fig["layout"]["yaxis{}".format(y)].update(title="-log10(pval)")
+                fig["layout"]["xaxis"].update(tickformat='g',
+                                              range=[window.begin, window.end])
+                fig["layout"].update(legend=dict(orientation='h'))
             else:
-                fig["layout"]["yaxis{}".format(position)].update(
-                    title="Reads")
-        fig["layout"].update(showlegend=False)
+                sys.exit("ERROR: unrecognized data type {}".format(sample_type))
     else:
         num_methrows = 4
         annot_row = 5

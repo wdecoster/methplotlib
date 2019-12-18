@@ -3,6 +3,7 @@ from methplotlib.annotation import parse_gtf, parse_bed
 import sys
 from sklearn.preprocessing import MinMaxScaler
 import pandas as pd
+import numpy as np
 
 
 class DataTraces(object):
@@ -106,12 +107,17 @@ def methylation(meth_data, dotsize=4):
                                           dotsize=dotsize)
             )
             split = True
-        else:
+        elif meth.data_type == 'nanocompore':
+            traces.append(plot_nanocompore(meth.table, dotsize=dotsize))
+            split = True
+        elif meth.data_type == 'nanopolish_freq':
             traces.append(
                 [go.Scatter(x=meth.table.index, y=meth.table["methylated_frequency"],
                             mode='lines',
                             name=meth.name,
                             hoverinfo='name')])
+        else:
+            sys.exit("ERROR: unrecognized data type {}".format(meth.data_type))
         types.append(meth.data_type)
         names.append(meth.name)
     return DataTraces(traces=traces,
@@ -271,3 +277,12 @@ def make_per_position_likelihood_scatter(read_table, maxval=0.75, dotsize=4):
                                                           "0", "Likely modified"],
                                                 ticks="outside"))
                       )
+
+
+def plot_nanocompore(table, dotsize=4):
+    return [go.Scatter(x=table['pos'],
+                       y=-table[pval].apply(np.log10),
+                       mode='markers+lines',
+                       name=pval,
+                       marker=dict(size=dotsize))
+            for pval in table.columns if not pval == 'pos']

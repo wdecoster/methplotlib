@@ -64,19 +64,35 @@ def parse_nanopolish(filename, file_type, name, window, smoothen=5):
                                     'called_sites', 'called_sites_methylated',
                                     'group_sequence'])
         return Methylation(
-            table=table
-            .sort_values('pos')
-            .groupby('pos')
-            .mean()
-            .rolling(window=smoothen, center=True)
-            .mean(),
+            table=table.sort_values('pos')
+                       .groupby('pos')
+                       .mean()
+                       .rolling(window=smoothen, center=True)
+                       .mean(),
             data_type=file_type,
             name=name,
             called_sites=called_sites.sum())
 
 
 def parse_nanocompore(filename, name, window):
-    pass
+    def nanocompore_columns_of_interest(column):
+        if column in ['pos', 'ref_id']:
+            return True
+        elif column.endswith('pvalue_context_2') or column.endswith('pvalue'):
+            return True
+        else:
+            return False
+    table = pd.read_csv(filename, sep="\t", usecols=nanocompore_columns_of_interest)
+    if window:
+        table = table[table["ref_id"] == window.chromosome]
+    return Methylation(
+        table=table.sort_values('pos')
+                   .append({'pos': window.end}, ignore_index=True)
+                   .drop(columns="ref_id")
+                   .fillna(1.0),
+        data_type='nanocompore',
+        name=name,
+        called_sites=len(table))
 
 
 def get_data(methylation_files, names, window, smoothen=5):

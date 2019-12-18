@@ -7,18 +7,31 @@ from time import time
 import logging
 import binascii
 import gzip
+from pyfaidx import Fasta
+import plotly
 
 
 class Region(object):
-    def __init__(self, region):
-        self.chromosome, interval = region.replace(',', '').split(':')
-        self.begin, self.end = [int(i) for i in interval.split('-')]
-        self.size = self.end - self.begin
-        self.string = "{}_{}_{}".format(self.chromosome, self.begin, self.end)
+    def __init__(self, region, fasta=None):
+        if ':' in region:
+            self.chromosome, interval = region.replace(',', '').split(':')
+            self.begin, self.end = [int(i) for i in interval.split('-')]
+            self.size = self.end - self.begin
+            self.string = "{}_{}_{}".format(self.chromosome, self.begin, self.end)
+        else:  # When region is an entire chromosome, contig or transcript
+            if fasta is None:
+                sys.exit("A fasta reference file is required if --window "
+                         "is an entire chromosome, contig or transcript")
+            else:
+                self.chromosome = region
+                self.begin = 0
+                self.string = region
+                self.end = len(Fasta(fasta)[region])
+                self.size = self.end
 
 
-def make_windows(full_window, max_size=1e6):
-    full_reg = Region(full_window)
+def make_windows(full_window, max_size=1e6, fasta=None):
+    full_reg = Region(full_window, fasta)
     if full_reg.size > max_size:
         chunks = ceil(full_reg.size / max_size)
         chunksize = ceil(full_reg.size / chunks)
@@ -53,6 +66,8 @@ def get_args():
                         help="add annotation based on a gtf file matching to your reference genome")
     parser.add_argument("-b", "--bed",
                         help="add annotation based on a bed file matching to your reference genome")
+    parser.add_argument("-f", "--fasta",
+                        help="required when --window is an entire chromosome, contig or transcript")
     parser.add_argument("--simplify",
                         help="simplify annotation track to show genes rather than transcripts",
                         action="store_true")
@@ -101,6 +116,27 @@ def init_logs(args):
         __version__, sys.version.replace('\n', ' '), args))
 
 
+def print_example():
+    import pkg_resources
+    meth = pkg_resources.resource_filename("methplotlib", "examples/ACTB_calls.tsv.gz")
+    meth_freq = pkg_resources.resource_filename("methplotlib", "examples/meth_freq.tsv.gz")
+    bed = pkg_resources.resource_filename("methplotlib", "examples/DNAse_cluster.bed.gz")
+    annotation = pkg_resources.resource_filename("methplotlib", "examples/g38_locus.gtf.gz")
+
+    example = """
+methplotlib -m {meth} \\
+               {meth_freq} \\
+            -n calls frequencies \\
+            -w chr7:5,525,542-5,543,028 \\
+            -g {annotation} \\
+            --simplify \\
+            -b {bed} \\
+            -o '{{region}}/example.html'""".strip().format(meth=meth, meth_freq=meth_freq,
+                                                           annotation=annotation, bed=bed)
+    print(example)
+    sys.exit(0)
+
+
 def is_gz_file(filepath):
     with open(filepath, 'rb') as test_f:
         return binascii.hexlify(test_f.read(2)) == b'1f8b'
@@ -125,3 +161,34 @@ def file_sniffer(filename):
         return "nanopolish_freq"
     else:
         sys.exit("\n\n\nInput file {} not recognized!\n".format(filename))
+
+
+def create_browser_output(fig, outfile, window):
+    if outfile is None:
+        outfile = "methylation_browser_{}.html".format(window.string)
+    else:
+        from pathlib import Path
+
+        outfile = outfile.format(region=window.string)
+        p = Path(outfile)
+        Path.mkdir(p.parent, exist_ok=True, parents=True)
+
+    if outfile.endswith(".html"):
+        write_html_output(fig, outfile)
+    else:
+        try:
+            fig.write_image(outfile)
+        except ValueError as e:
+            sys.stderr.write("\n\nERROR: creating the image in this file format failed.\n")
+            sys.stderr.write("ERROR: creating in default html format instead.\n")
+            sys.stderr.write("ERROR: additional packages required. Detailed error:\n")
+            sys.stderr.write(str(e))
+            write_html_output(fig, outfile)
+
+
+def write_html_output(fig, outfile):
+    with open(outfile, "w+") as output:
+        output.write(plotly.offline.plot(fig,
+                                         output_type="div",
+                                         show_link=False,
+                                         include_plotlyjs='cdn'))

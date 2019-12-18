@@ -9,30 +9,10 @@ import sys
 
 def main():
     args = utils.get_args()
-
     if args.example:
-        import pkg_resources
-        meth = pkg_resources.resource_filename("methplotlib", "examples/ACTB_calls.tsv.gz")
-        meth_freq = pkg_resources.resource_filename("methplotlib", "examples/meth_freq.tsv.gz")
-        bed = pkg_resources.resource_filename("methplotlib", "examples/DNAse_cluster.bed.gz")
-        annotation = pkg_resources.resource_filename("methplotlib", "examples/g38_locus.gtf.gz")
-
-        example = """
-methplotlib -m {meth} \\
-               {meth_freq} \\
-            -n calls frequencies \\
-            -w chr7:5,525,542-5,543,028 \\
-            -g {annotation} \\
-            --simplify \\
-            -b {bed} \\
-            -o '{{region}}/example.html'""".strip().format(meth=meth, meth_freq=meth_freq,
-                                                           annotation=annotation, bed=bed)
-
-        print(example)
-        sys.exit(0)
-
+        utils.print_example()
     utils.init_logs(args)
-    windows = utils.make_windows(args.window)
+    windows = utils.make_windows(args.window, fasta=args.fasta)
     for window in windows:
         logging.info("Processing {}".format(window.string))
         meth_data = get_data(args.methylation, args.names, window, args.smooth)
@@ -61,7 +41,7 @@ def meth_browser(meth_data, window, gtf=False, bed=False, simplify=False,
      then show one line per sample and one for the annotation, with methrows = number of datasets
     if no splitting is needed,
      then 4/5 of the browser is used for overlayed samples and one for gtf annotation
-    the trace to be used for annotation is thus always methrows + 1
+    the trace to be used for annotation is thus always num_methrows + 1
     """
     meth_traces = plots.methylation(meth_data, dotsize=dotsize)
     logging.info("Prepared methylation traces.")
@@ -69,26 +49,46 @@ def meth_browser(meth_data, window, gtf=False, bed=False, simplify=False,
         num_methrows = len(meth_data)
         annot_row = num_methrows + 1
         annot_axis = 'yaxis{}'.format(annot_row)
-        fig = create_subplots(num_methrows, split=True, names=meth_traces.names)
-        for position, (sample_traces, sample_type) in enumerate(meth_traces, start=1):
+        fig = create_subplots(num_methrows,
+                              split=True,
+                              names=meth_traces.names,
+                              annotation=bool(bed or gtf))
+        for y, (sample_traces, sample_type) in enumerate(meth_traces, start=1):
+            logging.info("Adding traces of type {} at height {}".format(sample_type, y))
             for meth_trace in sample_traces:
-                fig.append_trace(trace=meth_trace, row=position, col=1)
+                fig.append_trace(trace=meth_trace, row=y, col=1)
             if sample_type == 'nanopolish_freq':
-                fig["layout"]["yaxis{}".format(position)].update(
-                    title="Modified <br> frequency")
+                fig["layout"]["yaxis{}".format(y)].update(title="Modified <br> frequency")
+                fig["layout"].update(showlegend=False)
+                fig["layout"]["xaxis"].update(tickformat='g',
+                                              separatethousands=True,
+                                              range=[window.begin, window.end])
+                fig["layout"].update(legend=dict(orientation='h'))
+            elif sample_type in ['nanopolish_call', 'nanopolish_phased']:
+                fig["layout"]["yaxis{}".format(y)].update(title="Reads")
+                fig["layout"].update(showlegend=False)
+                fig["layout"]["xaxis"].update(tickformat='g',
+                                              separatethousands=True,
+                                              range=[window.begin, window.end])
+            elif sample_type == 'nanocompore':
+                fig["layout"]["yaxis{}".format(y)].update(title="-log10(pval)")
+                fig["layout"]["xaxis"].update(tickformat='g',
+                                              range=[window.begin, window.end])
+                fig["layout"].update(legend=dict(orientation='h'))
             else:
-                fig["layout"]["yaxis{}".format(position)].update(
-                    title="Reads")
-        fig["layout"].update(showlegend=False)
+                sys.exit("ERROR: unrecognized data type {}".format(sample_type))
     else:
         num_methrows = 4
         annot_row = 5
         annot_axis = 'yaxis2'
-        fig = create_subplots(num_methrows, split=False)
+        fig = create_subplots(num_methrows, split=False, annotation=bool(bed or gtf))
         for meth_trace in meth_traces.traces:
             fig.append_trace(trace=meth_trace[0], row=1, col=1)
         fig["layout"].update(legend=dict(orientation='h'))
         fig["layout"]['yaxis'].update(title="Modified <br> frequency")
+        fig["layout"]["xaxis"].update(tickformat='g',
+                                      separatethousands=True,
+                                      range=[window.begin, window.end])
     logging.info("Prepared modification plots.")
     if bed:
         for annot_trace in plots.bed_annotation(bed, window):
@@ -110,54 +110,37 @@ def meth_browser(meth_data, window, gtf=False, bed=False, simplify=False,
                          title="Nucleotide modifications",
                          hovermode='closest',
                          plot_bgcolor='rgba(0,0,0,0)')
-    fig["layout"]["xaxis"].update(tickformat='g',
-                                  separatethousands=True,
-                                  range=[window.begin, window.end])
-
-    if outfile is None:
-        outfile = "methylation_browser_{}.html".format(window.string)
-    else:
-        from pathlib import Path
-
-        outfile = outfile.format(region=window.string)
-        p = Path(outfile)
-        Path.mkdir(p.parent, exist_ok=True, parents=True)
-
-    if outfile.endswith(".html"):
-        write_html_output(fig, outfile)
-    else:
-        try:
-            fig.write_image(outfile)
-        except ValueError as e:
-            sys.stderr.write("\n\nERROR: creating the image in this file format failed.\n")
-            sys.stderr.write("ERROR: creating in default html format instead.\n")
-            sys.stderr.write("ERROR: additional packages required. Detailed error:\n")
-            sys.stderr.write(str(e))
-            write_html_output(fig, outfile)
+    utils.create_browser_output(fig, outfile, window)
 
 
-def create_subplots(num_methrows, split, names=None):
+def create_subplots(num_methrows, split, names=None, annotation=True):
+    '''
+    Prepare the panels (rows * 1 column) for the subplots.
+    If splitting: one row for each dataset, taking 90%/len(datasets) for heights
+    If not: one row spanning 4 rows and taking 90% of the heights
+    if annotation is True (bed or gtf) then add a row with height 10%
+    '''
     if split:
         return plotly.subplots.make_subplots(
-            rows=num_methrows + 1,
+            rows=num_methrows + annotation,
             cols=1,
             shared_xaxes=True,
-            specs=[[{}] for i in range(num_methrows + 1)],
+            specs=[[{}] for i in range(num_methrows + annotation)],
             print_grid=False,
             subplot_titles=names,
             vertical_spacing=0.1,
-            row_heights=[0.9 / num_methrows] * num_methrows + [0.1]
+            row_heights=[0.9 / num_methrows] * num_methrows + [0.1] * annotation
 
         )
     else:
         return plotly.subplots.make_subplots(
-            rows=num_methrows + 1,
+            rows=num_methrows + annotation,
             cols=1,
             shared_xaxes=True,
-            specs=[[{'rowspan': num_methrows}], [None], [None], [None], [{}], ],
+            specs=[[{'rowspan': num_methrows}], [None], [None], [None]] + [{}] * annotation,
             print_grid=False,
             vertical_spacing=0.1,
-            row_heights=[0.9, 0, 0, 0, 0.1]
+            row_heights=[0.9, 0, 0, 0] + [0.1] * annotation
         )
 
 
@@ -190,14 +173,6 @@ def qc_plots(meth_data, window, qcpath=None, outpath=None):
         if len([m for m in meth_data
                 if m.data_type in ["nanopolish_call", "nanopolish_phased"]]) > 2:
             pass
-
-
-def write_html_output(fig, outfile):
-    with open(outfile, "w+") as output:
-        output.write(plotly.offline.plot(fig,
-                                         output_type="div",
-                                         show_link=False,
-                                         include_plotlyjs='cdn'))
 
 
 if __name__ == '__main__':

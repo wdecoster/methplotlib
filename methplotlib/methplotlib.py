@@ -9,28 +9,8 @@ import sys
 
 def main():
     args = utils.get_args()
-
     if args.example:
-        import pkg_resources
-        meth = pkg_resources.resource_filename("methplotlib", "examples/ACTB_calls.tsv.gz")
-        meth_freq = pkg_resources.resource_filename("methplotlib", "examples/meth_freq.tsv.gz")
-        bed = pkg_resources.resource_filename("methplotlib", "examples/DNAse_cluster.bed.gz")
-        annotation = pkg_resources.resource_filename("methplotlib", "examples/g38_locus.gtf.gz")
-
-        example = """
-methplotlib -m {meth} \\
-               {meth_freq} \\
-            -n calls frequencies \\
-            -w chr7:5,525,542-5,543,028 \\
-            -g {annotation} \\
-            --simplify \\
-            -b {bed} \\
-            -o '{{region}}/example.html'""".strip().format(meth=meth, meth_freq=meth_freq,
-                                                           annotation=annotation, bed=bed)
-
-        print(example)
-        sys.exit(0)
-
+        utils.print_example()
     utils.init_logs(args)
     windows = utils.make_windows(args.window)
     for window in windows:

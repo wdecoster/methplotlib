@@ -64,12 +64,11 @@ def parse_nanopolish(filename, file_type, name, window, smoothen=5):
                                     'called_sites', 'called_sites_methylated',
                                     'group_sequence'])
         return Methylation(
-            table=table
-            .sort_values('pos')
-            .groupby('pos')
-            .mean()
-            .rolling(window=smoothen, center=True)
-            .mean(),
+            table=table.sort_values('pos')
+                       .groupby('pos')
+                       .mean()
+                       .rolling(window=smoothen, center=True)
+                       .mean(),
             data_type=file_type,
             name=name,
             called_sites=called_sites.sum())

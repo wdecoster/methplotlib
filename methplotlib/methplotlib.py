@@ -12,7 +12,7 @@ def main():
     if args.example:
         utils.print_example()
     utils.init_logs(args)
-    windows = utils.make_windows(args.window)
+    windows = utils.make_windows(args.window, fasta=args.fasta)
     for window in windows:
         logging.info("Processing {}".format(window.string))
         meth_data = get_data(args.methylation, args.names, window, args.smooth)

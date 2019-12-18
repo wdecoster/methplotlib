@@ -7,18 +7,30 @@ from time import time
 import logging
 import binascii
 import gzip
+from pyfaidx import Fasta
 
 
 class Region(object):
-    def __init__(self, region):
-        self.chromosome, interval = region.replace(',', '').split(':')
-        self.begin, self.end = [int(i) for i in interval.split('-')]
-        self.size = self.end - self.begin
-        self.string = "{}_{}_{}".format(self.chromosome, self.begin, self.end)
+    def __init__(self, region, fasta=None):
+        if ':' in region:
+            self.chromosome, interval = region.replace(',', '').split(':')
+            self.begin, self.end = [int(i) for i in interval.split('-')]
+            self.size = self.end - self.begin
+            self.string = "{}_{}_{}".format(self.chromosome, self.begin, self.end)
+        else:  # When region is an entire chromosome, contig or transcript
+            if fasta is None:
+                sys.exit("A fasta reference file is required if --window "
+                         "is an entire chromosome, contig or transcript")
+            else:
+                self.chromosome = region
+                self.begin = 0
+                self.string = region
+                self.end = len(Fasta(fasta)[region])
+                self.size = self.end
 
 
-def make_windows(full_window, max_size=1e6):
-    full_reg = Region(full_window)
+def make_windows(full_window, max_size=1e6, fasta=None):
+    full_reg = Region(full_window, fasta)
     if full_reg.size > max_size:
         chunks = ceil(full_reg.size / max_size)
         chunksize = ceil(full_reg.size / chunks)
@@ -53,6 +65,8 @@ def get_args():
                         help="add annotation based on a gtf file matching to your reference genome")
     parser.add_argument("-b", "--bed",
                         help="add annotation based on a bed file matching to your reference genome")
+    parser.add_argument("-f", "--fasta",
+                        help="required when --window is an entire chromosome, contig or transcript")
     parser.add_argument("--simplify",
                         help="simplify annotation track to show genes rather than transcripts",
                         action="store_true")

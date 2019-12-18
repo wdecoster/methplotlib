@@ -49,16 +49,27 @@ def meth_browser(meth_data, window, gtf=False, bed=False, simplify=False,
         num_methrows = len(meth_data)
         annot_row = num_methrows + 1
         annot_axis = 'yaxis{}'.format(annot_row)
-        for position, (sample_traces, sample_type) in enumerate(meth_traces, start=1):
         fig = create_subplots(num_methrows,
                               split=True,
                               names=meth_traces.names,
                               annotation=bool(bed or gtf))
+        for y, (sample_traces, sample_type) in enumerate(meth_traces, start=1):
+            logging.info("Adding traces of type {} at height {}".format(sample_type, y))
             for meth_trace in sample_traces:
-                fig.append_trace(trace=meth_trace, row=position, col=1)
+                fig.append_trace(trace=meth_trace, row=y, col=1)
             if sample_type == 'nanopolish_freq':
-                fig["layout"]["yaxis{}".format(position)].update(
-                    title="Modified <br> frequency")
+                fig["layout"]["yaxis{}".format(y)].update(title="Modified <br> frequency")
+                fig["layout"].update(showlegend=False)
+                fig["layout"]["xaxis"].update(tickformat='g',
+                                              separatethousands=True,
+                                              range=[window.begin, window.end])
+                fig["layout"].update(legend=dict(orientation='h'))
+            elif sample_type in ['nanopolish_call', 'nanopolish_phased']:
+                fig["layout"]["yaxis{}".format(y)].update(title="Reads")
+                fig["layout"].update(showlegend=False)
+                fig["layout"]["xaxis"].update(tickformat='g',
+                                              separatethousands=True,
+                                              range=[window.begin, window.end])
             elif sample_type == 'nanocompore':
                 fig["layout"]["yaxis{}".format(y)].update(title="-log10(pval)")
                 fig["layout"]["xaxis"].update(tickformat='g',
@@ -75,6 +86,9 @@ def meth_browser(meth_data, window, gtf=False, bed=False, simplify=False,
             fig.append_trace(trace=meth_trace[0], row=1, col=1)
         fig["layout"].update(legend=dict(orientation='h'))
         fig["layout"]['yaxis'].update(title="Modified <br> frequency")
+        fig["layout"]["xaxis"].update(tickformat='g',
+                                      separatethousands=True,
+                                      range=[window.begin, window.end])
     logging.info("Prepared modification plots.")
     if bed:
         for annot_trace in plots.bed_annotation(bed, window):
@@ -96,10 +110,6 @@ def meth_browser(meth_data, window, gtf=False, bed=False, simplify=False,
                          title="Nucleotide modifications",
                          hovermode='closest',
                          plot_bgcolor='rgba(0,0,0,0)')
-    fig["layout"]["xaxis"].update(tickformat='g',
-                                  separatethousands=True,
-                                  range=[window.begin, window.end])
-
     utils.create_browser_output(fig, outfile, window)
 
 

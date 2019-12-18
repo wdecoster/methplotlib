@@ -49,8 +49,11 @@ def meth_browser(meth_data, window, gtf=False, bed=False, simplify=False,
         num_methrows = len(meth_data)
         annot_row = num_methrows + 1
         annot_axis = 'yaxis{}'.format(annot_row)
-        fig = create_subplots(num_methrows, split=True, names=meth_traces.names)
         for position, (sample_traces, sample_type) in enumerate(meth_traces, start=1):
+        fig = create_subplots(num_methrows,
+                              split=True,
+                              names=meth_traces.names,
+                              annotation=bool(bed or gtf))
             for meth_trace in sample_traces:
                 fig.append_trace(trace=meth_trace, row=position, col=1)
             if sample_type == 'nanopolish_freq':
@@ -64,7 +67,7 @@ def meth_browser(meth_data, window, gtf=False, bed=False, simplify=False,
         num_methrows = 4
         annot_row = 5
         annot_axis = 'yaxis2'
-        fig = create_subplots(num_methrows, split=False)
+        fig = create_subplots(num_methrows, split=False, annotation=bool(bed or gtf))
         for meth_trace in meth_traces.traces:
             fig.append_trace(trace=meth_trace[0], row=1, col=1)
         fig["layout"].update(legend=dict(orientation='h'))
@@ -97,28 +100,34 @@ def meth_browser(meth_data, window, gtf=False, bed=False, simplify=False,
     utils.create_browser_output(fig, outfile, window)
 
 
-def create_subplots(num_methrows, split, names=None):
+def create_subplots(num_methrows, split, names=None, annotation=True):
+    '''
+    Prepare the panels (rows * 1 column) for the subplots.
+    If splitting: one row for each dataset, taking 90%/len(datasets) for heights
+    If not: one row spanning 4 rows and taking 90% of the heights
+    if annotation is True (bed or gtf) then add a row with height 10%
+    '''
     if split:
         return plotly.subplots.make_subplots(
-            rows=num_methrows + 1,
+            rows=num_methrows + annotation,
             cols=1,
             shared_xaxes=True,
-            specs=[[{}] for i in range(num_methrows + 1)],
+            specs=[[{}] for i in range(num_methrows + annotation)],
             print_grid=False,
             subplot_titles=names,
             vertical_spacing=0.1,
-            row_heights=[0.9 / num_methrows] * num_methrows + [0.1]
+            row_heights=[0.9 / num_methrows] * num_methrows + [0.1] * annotation
 
         )
     else:
         return plotly.subplots.make_subplots(
-            rows=num_methrows + 1,
+            rows=num_methrows + annotation,
             cols=1,
             shared_xaxes=True,
-            specs=[[{'rowspan': num_methrows}], [None], [None], [None], [{}], ],
+            specs=[[{'rowspan': num_methrows}], [None], [None], [None]] + [{}] * annotation,
             print_grid=False,
             vertical_spacing=0.1,
-            row_heights=[0.9, 0, 0, 0, 0.1]
+            row_heights=[0.9, 0, 0, 0] + [0.1] * annotation
         )
 
 

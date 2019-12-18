@@ -94,26 +94,7 @@ def meth_browser(meth_data, window, gtf=False, bed=False, simplify=False,
                                   separatethousands=True,
                                   range=[window.begin, window.end])
 
-    if outfile is None:
-        outfile = "methylation_browser_{}.html".format(window.string)
-    else:
-        from pathlib import Path
-
-        outfile = outfile.format(region=window.string)
-        p = Path(outfile)
-        Path.mkdir(p.parent, exist_ok=True, parents=True)
-
-    if outfile.endswith(".html"):
-        write_html_output(fig, outfile)
-    else:
-        try:
-            fig.write_image(outfile)
-        except ValueError as e:
-            sys.stderr.write("\n\nERROR: creating the image in this file format failed.\n")
-            sys.stderr.write("ERROR: creating in default html format instead.\n")
-            sys.stderr.write("ERROR: additional packages required. Detailed error:\n")
-            sys.stderr.write(str(e))
-            write_html_output(fig, outfile)
+    utils.create_browser_output(fig, outfile, window)
 
 
 def create_subplots(num_methrows, split, names=None):
@@ -170,14 +151,6 @@ def qc_plots(meth_data, window, qcpath=None, outpath=None):
         if len([m for m in meth_data
                 if m.data_type in ["nanopolish_call", "nanopolish_phased"]]) > 2:
             pass
-
-
-def write_html_output(fig, outfile):
-    with open(outfile, "w+") as output:
-        output.write(plotly.offline.plot(fig,
-                                         output_type="div",
-                                         show_link=False,
-                                         include_plotlyjs='cdn'))
 
 
 if __name__ == '__main__':

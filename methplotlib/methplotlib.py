@@ -41,7 +41,7 @@ def meth_browser(meth_data, window, gtf=False, bed=False, simplify=False,
      then show one line per sample and one for the annotation, with methrows = number of datasets
     if no splitting is needed,
      then 4/5 of the browser is used for overlayed samples and one for gtf annotation
-    the trace to be used for annotation is thus always methrows + 1
+    the trace to be used for annotation is thus always num_methrows + 1
     """
     meth_traces = plots.methylation(meth_data, dotsize=dotsize)
     logging.info("Prepared methylation traces.")

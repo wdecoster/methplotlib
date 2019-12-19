@@ -14,8 +14,13 @@ import plotly
 class Region(object):
     def __init__(self, region, fasta=None):
         if ':' in region:
-            self.chromosome, interval = region.replace(',', '').split(':')
-            self.begin, self.end = [int(i) for i in interval.split('-')]
+            try:
+                self.chromosome, interval = region.replace(',', '').split(':')
+                self.begin, self.end = [int(i) for i in interval.split('-')]
+            except ValueError:
+                sys.exit("\n\nERROR: Window (-w/--window) inproperly formatted, "
+                         "examples of accepted formats are:\n"
+                         "'chr5:150200605-150423790' or 'ENST00000647408'\n\n")
             self.size = self.end - self.begin
             self.string = "{}_{}_{}".format(self.chromosome, self.begin, self.end)
         else:  # When region is an entire chromosome, contig or transcript

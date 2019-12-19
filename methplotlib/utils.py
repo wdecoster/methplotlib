@@ -147,10 +147,17 @@ def is_gz_file(filepath):
         return binascii.hexlify(test_f.read(2)) == b'1f8b'
 
 
+def is_cram_file(filepath):
+    with open(filepath, 'rb') as test_f:
+        return test_f.read(4) == b'CRAM'
+
+
 def file_sniffer(filename):
     """
     Takes in a filename and tries to guess the input file type
     """
+    if is_cram_file(filename):
+        return "ont-cram"
     if is_gz_file(filename):
         header = gzip.open(filename, 'rt').readline()
     else:

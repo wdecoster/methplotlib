@@ -75,6 +75,11 @@ def meth_browser(meth_data, window, gtf=False, bed=False, simplify=False,
                 fig["layout"]["xaxis"].update(tickformat='g',
                                               range=[window.begin, window.end])
                 fig["layout"].update(legend=dict(orientation='h'))
+            elif sample_type == 'ont-cram':
+                fig["layout"]["yaxis{}".format(y)].update(title="Reads")
+                fig["layout"]["xaxis"].update(tickformat='g',
+                                              separatethousands=True,
+                                              range=[window.begin, window.end])
             else:
                 sys.exit("ERROR: unrecognized data type {}".format(sample_type))
     else:
@@ -137,7 +142,7 @@ def create_subplots(num_methrows, split, names=None, annotation=True):
             rows=num_methrows + annotation,
             cols=1,
             shared_xaxes=True,
-            specs=[[{'rowspan': num_methrows}], [None], [None], [None]] + [{}] * annotation,
+            specs=[[{'rowspan': num_methrows}], [None], [None], [None]] + [[{}]] * annotation,
             print_grid=False,
             vertical_spacing=0.1,
             row_heights=[0.9, 0, 0, 0] + [0.1] * annotation

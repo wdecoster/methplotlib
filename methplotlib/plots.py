@@ -102,9 +102,9 @@ def methylation(meth_data, dotsize=4):
     for meth in meth_data:
         if meth.data_type in ['nanopolish_call', 'nanopolish_phased']:
             traces.append(
-                make_per_read_meth_traces(table=meth.table,
-                                          phased=meth.data_type == 'nanopolish_phased',
-                                          dotsize=dotsize)
+                make_per_read_meth_traces_llr(table=meth.table,
+                                              phased=meth.data_type == 'nanopolish_phased',
+                                              dotsize=dotsize)
             )
             split = True
         elif meth.data_type == 'nanocompore':
@@ -116,6 +116,12 @@ def methylation(meth_data, dotsize=4):
                             mode='lines',
                             name=meth.name,
                             hoverinfo='name')])
+        elif meth.data_type == 'ont-cram':
+            traces.append(
+                make_per_read_meth_traces_phred(table=meth.table,
+                                                dotsize=dotsize)
+            )
+            split = True
         else:
             sys.exit("ERROR: unrecognized data type {}".format(meth.data_type))
         types.append(meth.data_type)
@@ -126,7 +132,34 @@ def methylation(meth_data, dotsize=4):
                       split=split)
 
 
-def make_per_read_meth_traces(table, phased=False, max_coverage=100, dotsize=4):
+def make_per_read_meth_traces_phred(table, max_coverage=100, dotsize=4):
+    """Make traces for each read"""
+    minmax_table = find_min_and_max_pos_per_read(table)
+    df_heights = assign_y_height_per_read(minmax_table, max_coverage=max_coverage)
+    table = table.join(df_heights, on="read_name")
+    traces = []
+    hidden_reads = 0
+    for read in table["read_name"].unique():
+        strand = table.loc[table["read_name"] == read, "strand"].values[0]
+        try:
+            traces.append(
+                make_per_read_line_trace(read_range=minmax_table.loc[read],
+                                         y_pos=df_heights.loc[read, 'height'],
+                                         strand=strand)
+            )
+        except KeyError:
+            hidden_reads += 1
+            continue
+    if hidden_reads:
+        sys.stderr.write("Warning: hiding {} reads because coverage above {}x.\n".format(
+            hidden_reads, max_coverage))
+    traces.append(
+        make_per_position_phred_scatter(read_table=table, dotsize=dotsize)
+    )
+    return traces
+
+
+def make_per_read_meth_traces_llr(table, phased=False, max_coverage=100, dotsize=4):
     """Make traces for each read"""
     minmax_table = find_min_and_max_pos_per_read(table, phased=phased)
     df_heights = assign_y_height_per_read(minmax_table, phased=phased, max_coverage=max_coverage)
@@ -159,7 +192,7 @@ def make_per_read_meth_traces(table, phased=False, max_coverage=100, dotsize=4):
     return traces
 
 
-def find_min_and_max_pos_per_read(table, phased):
+def find_min_and_max_pos_per_read(table, phased=False):
     """Return a table with for every read the minimum and maximum position"""
     mm_table = table.loc[:, ["read_name", "pos"]] \
         .groupby('read_name') \
@@ -277,6 +310,26 @@ def make_per_position_likelihood_scatter(read_table, maxval=0.75, dotsize=4):
                                                           "0", "Likely <br> modified"],
                                                 ticks="outside"))
                       )
+
+
+def make_per_position_phred_scatter(read_table, dotsize=4):
+    """Make scatter plot per CpG per read"""
+    return go.Scatter(x=read_table['pos'],
+                      y=read_table['height'],
+                      mode='markers',
+                      showlegend=False,
+                      text=read_table['mod'],
+                      hoverinfo="text",
+                      marker=dict(size=dotsize,
+                                  color=read_table['quality'],
+                                  colorscale='Reds',
+                                  colorbar=dict(title="Modification probability",
+                                                titleside="right",
+                                                tickvals=[0, read_table['quality'].max()],
+                                                ticktext=["Likely <br> unmodified",
+                                                          "Likely <br> modified"],
+                                                ticks="outside")
+                                  ))
 
 
 def plot_nanocompore(table, dotsize=4):

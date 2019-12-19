@@ -273,8 +273,8 @@ def make_per_position_likelihood_scatter(read_table, maxval=0.75, dotsize=4):
                                   colorbar=dict(title="Modification likelihood",
                                                 titleside="right",
                                                 tickvals=[-maxval, 0, maxval],
-                                                ticktext=["Likely unmodified",
-                                                          "0", "Likely modified"],
+                                                ticktext=["Likely <br> unmodified",
+                                                          "0", "Likely <br> modified"],
                                                 ticks="outside"))
                       )
 

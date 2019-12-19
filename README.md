@@ -5,7 +5,7 @@
 
 # METHPLOTLIB
 
-This script takes data from nanopolish, either as methylation calls or methylation frequencies (as processed by calculate_methylation_frequency.py) to generate a genome browser view on a window.
+This script takes data from i) [nanopolish](https://github.com/jts/nanopolish), either as methylation calls or methylation frequencies (as processed by calculate_methylation_frequency.py) or ii) [nanocompore](https://github.com/tleonardi/nanocompore) to generate a browser view on a window.
 
 ## INSTALLATION
 `pip install methplotlib`

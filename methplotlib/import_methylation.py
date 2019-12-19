@@ -4,6 +4,7 @@ import numpy as np
 import sys
 import logging
 from methplotlib.utils import file_sniffer
+import pysam
 
 
 class Methylation(object):
@@ -29,8 +30,10 @@ def read_meth(filename, name, window, smoothen=5):
     try:
         if file_type.startswith("nanopolish"):
             return parse_nanopolish(filename, file_type, name, window, smoothen=smoothen)
-        if file_type == "nanocompore":
+        elif file_type == "nanocompore":
             return parse_nanocompore(filename, name, window)
+        elif file_type == "ont-cram":
+            return parse_ont_cram(filename, name, window)
     except Exception:
         sys.stderr.write("\n\n\nInput file {} not recognized!\n".format(filename))
         sys.stderr.write("\n\n\nDetailed error:\n")
@@ -93,6 +96,47 @@ def parse_nanocompore(filename, name, window):
         data_type='nanocompore',
         name=name,
         called_sites=len(table))
+
+
+def parse_ont_cram(filename, name, window):
+    cram = pysam.AlignmentFile(filename, "rc")
+    data = []
+    for read in cram.fetch(reference=window.chromosome, start=window.begin, end=window.end):
+        if not read.is_supplementary and not read.is_secondary:
+            for mod, positions, quals in get_modified_reference_positions(read):
+                for pos, qual in zip(positions, quals):
+                    if pos is not None:
+                        data.append((read.query_name,
+                                     '-' if read.is_reverse else '+',
+                                     pos,
+                                     qual,
+                                     mod))
+    return Methylation(
+        table=pd.DataFrame(data, columns=['read_name', 'strand', 'pos', 'quality', 'mod'])
+                .astype(dtype={'mod': 'category', 'quality': 'int'})
+                .sort_values(['read_name', 'pos']),
+        data_type="ont-cram",
+        name=name,
+        called_sites=len(data))
+
+
+def get_modified_reference_positions(read):
+    basemod = read.get_tag('MM').split(',', 1)[0]
+    if '-' in basemod:
+        sys.exit("ERROR: modifications on negative strand currently unsupported.")
+    base, mod = basemod.split('+')
+    deltas = [int(i) for i in read.get_tag('MM').split(',')[1:]]
+    quals = [ord(i) - 33 for i in read.get_tag('MP')]
+    locations = np.cumsum(deltas) + np.concatenate((np.zeros(shape=1),
+                                                    np.ones(shape=len(deltas) - 1))).astype('int')
+    base_index = np.array(
+        [i for i, letter in enumerate(read.get_forward_sequence()) if letter == base]
+    )
+    modified_bases = base_index[locations]
+    refpos = np.array(read.get_reference_positions(full_length=True))
+    if read.is_reverse:
+        refpos = np.flipud(refpos)
+    return [(basemod, refpos[modified_bases], quals)]
 
 
 def get_data(methylation_files, names, window, smoothen=5):

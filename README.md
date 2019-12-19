@@ -5,7 +5,10 @@
 
 # METHPLOTLIB
 
-This script takes data from i) [nanopolish](https://github.com/jts/nanopolish), either as methylation calls or methylation frequencies (as processed by calculate_methylation_frequency.py) or ii) [nanocompore](https://github.com/tleonardi/nanocompore) to generate a browser view on a window.
+This script generates a browser view on a window using data from  
+i) [nanopolish](https://github.com/jts/nanopolish), either as methylation calls or methylation frequencies (as processed by calculate_methylation_frequency.py)  
+ii) [nanocompore](https://github.com/tleonardi/nanocompore)  
+iii) in ont-cram format with MM/MP tags according to the SAM specifications and converted using e.g. [this script](https://github.com/kpalin/gcf52ref/blob/f5_to_usam/scripts/extract_methylation_fast5_to_sam.py)
 
 ## INSTALLATION
 `pip install methplotlib`

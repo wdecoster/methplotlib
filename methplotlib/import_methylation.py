@@ -136,6 +136,7 @@ def get_modified_reference_positions(read):
     refpos = np.array(read.get_reference_positions(full_length=True))
     if read.is_reverse:
         refpos = np.flipud(refpos)
+        quals = quals[::-1]
     return [(basemod, refpos[modified_bases], quals)]
 
 

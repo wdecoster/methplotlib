@@ -325,7 +325,8 @@ def make_per_position_phred_scatter(read_table, dotsize=4):
                                   colorscale='Reds',
                                   colorbar=dict(title="Modification probability",
                                                 titleside="right",
-                                                tickvals=[0, read_table['quality'].max()],
+                                                tickvals=[read_table['quality'].min(),
+                                                          read_table['quality'].max()],
                                                 ticktext=["Likely <br> unmodified",
                                                           "Likely <br> modified"],
                                                 ticks="outside")

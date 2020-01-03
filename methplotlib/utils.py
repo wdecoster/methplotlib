@@ -58,7 +58,7 @@ def get_args():
                         version='methplotlib {}'.format(__version__))
     parser.add_argument("-m", "--methylation",
                         nargs='+',
-                        help="nanopolish methylation calls or frequency output",
+                        help="methylation data in nanopolish, nanocompore or ont-cram format",
                         required=True if "--example" not in sys.argv else False)
     parser.add_argument("-n", "--names",
                         nargs='+',

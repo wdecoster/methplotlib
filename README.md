@@ -22,16 +22,31 @@ methplotlib [-h] [-v] -m METHYLATION [METHYLATION ...] -n NAMES
 Arguments:
   -h, --help            show this help message and exit
   -v, --version         Print version and exit.
+  -example             Show example command and exit.
+
   -m, --methylation METHYLATION [METHYLATION ...]
-                        nanoplish calls or frequency output
+                        methylation data in nanopolish, nanocompore or ont-cram format
   -n, --names NAMES [NAMES ...]
                         names of datasets in --methylation
   -w, --window WINDOW   window (region) to which the visualisation has to be restricted
   -g, --gtf GTF         add annotation based on a gtf file
   -b, --bed BED         add annotation based on a bed file matching to your reference genome
+  -f, --fasta FASTA     required when --window is an entire chromosome, contig or transcript
+
   --simplify            simplify annotation track to show genes rather than transcripts
   --split               split, rather than overlay the methylation frequency tracks
   --smooth SMOOTH       Smoothen the datapoints of frequencies, but reduce the details (integer, default=5)
+  --dotsize DOTSIZE     Control the size of dots in the per read plots
+  -o, --outfile OUTFILE File to write results to. Default: methylation_browser_{chr}_{start}_{end}.html.
+                        Use {region} as a shorthand for {chr}_{start}_{end} in the filename.
+                        Missing paths will be created.
+  -q, --qcfile QCFILE   File to write the qc report to. Default: The path in outfile prefixed with qc_,
+                        default is qc_report_methylation_browser_{chr}_{start}_{end}.html.
+                        Use {region} as a shorthand for {chr}_{start}_{end} in the filename.
+                        Missing paths will be created.
+
+
+
 ```
 
 ## Snakemake workflow

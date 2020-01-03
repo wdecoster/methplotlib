@@ -113,7 +113,7 @@ def parse_ont_cram(filename, name, window):
                                      mod))
     return Methylation(
         table=pd.DataFrame(data, columns=['read_name', 'strand', 'pos', 'quality', 'mod'])
-                .astype(dtype={'mod': 'category', 'quality': 'int'})
+                .astype(dtype={'mod': 'category', 'quality': 'float'})
                 .sort_values(['read_name', 'pos']),
         data_type="ont-cram",
         name=name,
@@ -126,7 +126,7 @@ def get_modified_reference_positions(read):
         sys.exit("ERROR: modifications on negative strand currently unsupported.")
     base, mod = basemod.split('+')
     deltas = [int(i) for i in read.get_tag('MM').split(',')[1:]]
-    quals = [ord(i) - 33 for i in read.get_tag('MP')]
+    probabilities = phred_to_probability(read.get_tag('MP'))
     locations = np.cumsum(deltas) + np.concatenate((np.zeros(shape=1),
                                                     np.ones(shape=len(deltas) - 1))).astype('int')
     base_index = np.array(
@@ -136,8 +136,17 @@ def get_modified_reference_positions(read):
     refpos = np.array(read.get_reference_positions(full_length=True))
     if read.is_reverse:
         refpos = np.flipud(refpos)
-        quals = quals[::-1]
-    return [(basemod, refpos[modified_bases], quals)]
+        probabilities = probabilities[::-1]
+    return [(basemod, refpos[modified_bases], probabilities)]
+
+
+def errs_tab(n):
+    """Generate list of error rates for qualities less than equal than n."""
+    return [10**(q / -10) for q in range(n + 1)]
+
+
+def phred_to_probability(quals, tab=errs_tab(128)):
+    return [tab[ord(q) - 33] for q in quals]
 
 
 def get_data(methylation_files, names, window, smoothen=5):

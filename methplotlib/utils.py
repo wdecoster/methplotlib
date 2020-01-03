@@ -1,4 +1,4 @@
-from argparse import ArgumentParser
+from argparse import ArgumentParser, SUPPRESS
 import sys
 from math import ceil
 from methplotlib.version import __version__
@@ -101,7 +101,9 @@ def get_args():
                              "default is qc_report_methylation_browser_{chr}_{start}_{end}.html. "
                              "Use {region} as a shorthand for {chr}_{start}_{end} in the filename. "
                              "Missing paths will be created.")
-
+    parser.add_argument("--store",
+                        help=SUPPRESS,
+                        action="store_true")
     args = parser.parse_args()
     if not args.example and not len(args.names) == len(args.methylation):
         sys.exit("INPUT ERROR: Expecting the same number of names as datasets!")

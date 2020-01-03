@@ -16,6 +16,11 @@ def main():
     for window in windows:
         logging.info("Processing {}".format(window.string))
         meth_data = get_data(args.methylation, args.names, window, args.smooth)
+        if args.store:
+            import pickle
+            pickle.dump(
+                obj=meth_data,
+                file=open("methplotlib-data-{}.pickle".format(window.string), 'wb'))
         logging.info("Collected methylation data for {} datasets".format(len(meth_data)))
         qc_plots(meth_data, window, qcpath=args.qcfile, outpath=args.outfile)
         logging.info("Created QC plots")

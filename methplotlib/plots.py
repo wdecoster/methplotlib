@@ -1,5 +1,5 @@
 import plotly.graph_objs as go
-from methplotlib.annotation import parse_gtf, parse_bed
+from methplotlib.annotation import parse_annotation, parse_bed
 import sys
 from sklearn.preprocessing import MinMaxScaler
 import pandas as pd
@@ -32,7 +32,7 @@ def gtf_annotation(gtf, window, simplify=False):
     indicating direction of transcription
     """
     result = []
-    annotation = parse_gtf(gtf, window, simplify)
+    annotation = parse_annotation(gtf, window, simplify)
     if annotation:
         for y_pos, transcript in enumerate(annotation):
             line = make_per_gene_annot_line_trace(transcript, window, y_pos)

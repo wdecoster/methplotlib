@@ -33,29 +33,35 @@ def good_record(line, chromosome):
     by checking for right chromosome and right feature type
     '''
     if line.startswith(chromosome) \
-            and line.split('\t')[2] == 'exon':
+            and line.split('\t')[2] in ['exon', 'gene']:
         return True
     else:
         return False
 
 
-def get_features(gtfline):
+def get_features(gtfline, type="gtf"):
     """
     Extract the desirable features from a gtf record
     """
     chromosome, _, _, begin, end, _, strand, _, attributes = gtfline.split('\t')
-    gene, transcript = parse_attributes(attributes.rstrip())
+    gene, transcript = parse_attributes(attributes.rstrip(), type=type)
     return [chromosome, int(begin), int(end), strand, gene, transcript]
 
 
-def parse_attributes(attributes):
+def parse_attributes(attributes, type="gtf"):
     """
     Parse the attributes string of gtf record
     Return the values corresponding to gene_name and transcript_id
     """
-    info = {i.split(' ')[0]: i.split(' ')[1].replace('"', '') for i in attributes.split(
-        '; ') if i.startswith('gene_name') or i.startswith('transcript_id')}
-    return info.get("gene_name"), info.get("transcript_id")
+    attribute_delimiter = {'gtf': '; ', 'gff': ';'}
+    kv_delimiter = {'gtf': ' ', 'gff': '='}
+    info = {i.split(kv_delimiter[type])[0]: i.split(kv_delimiter[type])[1].replace('"', '')
+            for i in attributes.split(attribute_delimiter[type])
+            if i.startswith(('gene_name', 'transcript_id', 'locus_tag'))}
+    if "gene_name" in info.keys():
+        return info.get("gene_name"), info.get("transcript_id")
+    else:
+        return info.get("locus_tag"), info.get("locus_tag")
 
 
 def transcripts_in_window(df, window, feature='transcript'):
@@ -68,13 +74,21 @@ def transcripts_in_window(df, window, feature='transcript'):
         .unique()
 
 
-def parse_gtf(gtff, window, simplify=False):
+def assign_colors_to_genes(transcripts):
+    genes = set([t.gene for t in transcripts])
+    colordict = {g: c for g, c in zip(genes, plcolors * 100)}
+    for t in transcripts:
+        t.color = colordict[t.gene]
+
+
+def parse_annotation(gtff, window, simplify=False):
     """
     Parse the gtff and select the relevant region as determined by the window
     return as Transcript objects
     """
-    logging.info("Parsing GTF file...")
-    df = pd.DataFrame(data=[get_features(line)
+    type = annot_file_sniffer(gtff)
+    logging.info("Parsing {} file...".format(type))
+    df = pd.DataFrame(data=[get_features(line, type=type)
                             for line in open_gtf(gtff) if good_record(line, window.chromosome)],
                       columns=['chromosome', 'begin', 'end', 'strand', 'gene', 'transcript'])
     logging.info("Loaded GTF file, processing...")
@@ -112,11 +126,19 @@ def parse_gtf(gtff, window, simplify=False):
     return res
 
 
-def assign_colors_to_genes(transcripts):
-    genes = set([t.gene for t in transcripts])
-    colordict = {g: c for g, c in zip(genes, plcolors * 100)}
-    for t in transcripts:
-        t.color = colordict[t.gene]
+def annot_file_sniffer(annot_file):
+    """
+    Figure out type of annotation file
+
+    Right not just lazily focus on the extension
+    """
+    if annot_file.endswith(('.gtf', '.gtf.gz')):
+        return 'gtf'
+    elif annot_file.endswith(('.gff', '.gff.gz')):
+        return 'gff'
+    else:
+        sys.exit("ERROR: unrecognized extension of the annotation file.\n"
+                 "Supported are gtf, gtf.gz, gff and gff.gz")
 
 
 def parse_bed(bed, window):

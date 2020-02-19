@@ -250,9 +250,9 @@ def rescale_log_likelihood_ratio(llr):
     negative ratios between -1 and 0
     """
     scaler = MinMaxScaler(feature_range=(0, 1))
-    llr[llr > 0] = scaler.fit_transform(llr[llr > 0].values.reshape(-1, 1))
+    llr[llr > 0] = scaler.fit_transform(llr[llr > 0].values.reshape(-1, 1)).tolist()
     scaler = MinMaxScaler(feature_range=(-1, 0))
-    llr[llr < 0] = scaler.fit_transform(llr[llr < 0].values.reshape(-1, 1))
+    llr[llr < 0] = scaler.fit_transform(llr[llr < 0].values.reshape(-1, 1)).tolist()
     return llr
 
 

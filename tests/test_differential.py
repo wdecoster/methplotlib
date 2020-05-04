@@ -9,6 +9,7 @@ import pandas as pd
 
 from methplotlib.differential.differential import main, merge_regions_with_bed
 
+
 def old_method(a_range, b_range, bed):
 
     from scipy.stats import fisher_exact
@@ -23,8 +24,10 @@ def old_method(a_range, b_range, bed):
     rowdicts = []
 
     for chr, begin, end in bed.merge().as_df().itertuples(index=False, name=None):
-        [d1, n1], [d2, n2] = meth_counts(a_range[chr, begin:end]), meth_counts(b_range[chr, begin:end])
-        rowdicts.append({"Chromosome": chr, "Start": begin, "End": end, "d1": d1, "d2": d2, "n1": n1, "n2": n2})
+        [d1, n1], [d2, n2] = meth_counts(
+            a_range[chr, begin:end]), meth_counts(b_range[chr, begin:end])
+        rowdicts.append({"Chromosome": chr, "Start": begin, "End": end,
+                         "d1": d1, "d2": d2, "n1": n1, "n2": n2})
         # print(c1, c2)
         # print(a, b, c, d)
         # odr, pv = fisher_exact([c1, c2])
@@ -35,6 +38,7 @@ def old_method(a_range, b_range, bed):
 
 
 columns = ["Chromosome", "Start", "End", "calls", "methylated"]
+
 
 @pytest.fixture
 def pr1():
@@ -53,10 +57,12 @@ def pr2():
 
     return pr.PyRanges(df)
 
+
 @pytest.fixture
 def bed():
 
     return pr.read_bed("tests/chr21.bed.gz")
+
 
 @pytest.fixture
 def expected_result():
@@ -82,7 +88,8 @@ def test_new_vs_old(pr1, pr2, bed, expected_result):
 @pytest.fixture()
 def simple_bed():
 
-    gr = pr.PyRanges(chromosomes=[1, 1, 1, 1, 1], starts=[0, 10, 20, 30, 100], ends=[5, 15, 25, 35, 105])
+    gr = pr.PyRanges(chromosomes=[1, 1, 1, 1, 1], starts=[
+                     0, 10, 20, 30, 100], ends=[5, 15, 25, 35, 105])
     gr.ID = list(range(len(gr)))
     return gr
 
@@ -99,20 +106,18 @@ def simple_m1():
 @pytest.fixture()
 def simple_m2():
 
-    m2 = pr.PyRanges(chromosomes=[1, 1, 1, 1, 1], starts=[0, 10, 30, 40, 55], ends=[5, 15, 35, 45, 55])
+    m2 = pr.PyRanges(chromosomes=[1, 1, 1, 1, 1], starts=[
+                     0, 10, 30, 40, 55], ends=[5, 15, 35, 45, 55])
     m2.calls = [1, 1, 2, 3, 5]
     m2.methylated = [0, 0, 2, 0, 5]
 
     return m2
+
 
 def test_simple(simple_bed, simple_m1, simple_m2):
 
     print(simple_bed, simple_m1, simple_m2)
     result = merge_regions_with_bed(simple_bed, simple_m1, simple_m2)
     print(result)
-    # means that the joins were incorrect 
+    # means that the joins were incorrect
     assert (result.Start != -1).all()
-
-
-
-

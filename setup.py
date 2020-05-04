@@ -34,7 +34,7 @@ setup(
     install_requires=['plotly>=4.1.1',
                       'numpy>=1.14.3',
                       'pandas>=0.23.4',
-                      'pyranges>=0.0.63',
+                      'pyranges>=0.0.77',
                       'fisher>=0.1.9',
                       'sklearn',
                       'pyfaidx',

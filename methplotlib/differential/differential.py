@@ -58,6 +58,6 @@ def main(a, b, bed):
 
     fe.insert(fe.shape[1], "ORFDR", pr.stats.fdr(fe.P))
 
-    m = m.insert(fe)[['OR', 'P']]
+    m = m.insert(fe[['OR', 'P']])
 
     return m

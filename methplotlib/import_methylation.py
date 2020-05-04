@@ -103,14 +103,14 @@ def parse_ont_cram(filename, name, window):
     data = []
     for read in cram.fetch(reference=window.chromosome, start=window.begin, end=window.end):
         if not read.is_supplementary and not read.is_secondary:
-            for mod, positions, quals in get_modified_reference_positions(read):
-                for pos, qual in zip(positions, quals):
-                    if pos is not None:
-                        data.append((read.query_name,
-                                     '-' if read.is_reverse else '+',
-                                     pos,
-                                     qual,
-                                     mod))
+            mod, positions, quals = get_modified_reference_positions(read)
+            for pos, qual in zip(positions, quals):
+                if pos is not None:
+                    data.append((read.query_name,
+                                 '-' if read.is_reverse else '+',
+                                 pos,
+                                 qual,
+                                 mod))
     return Methylation(
         table=pd.DataFrame(data, columns=['read_name', 'strand', 'pos', 'quality', 'mod'])
                 .astype(dtype={'mod': 'category', 'quality': 'float'})
@@ -121,23 +121,27 @@ def parse_ont_cram(filename, name, window):
 
 
 def get_modified_reference_positions(read):
-    basemod = read.get_tag('MM').split(',', 1)[0]
-    if '-' in basemod:
-        sys.exit("ERROR: modifications on negative strand currently unsupported.")
-    base, mod = basemod.split('+')
-    deltas = [int(i) for i in read.get_tag('MM').split(',')[1:]]
-    probabilities = phred_to_probability(read.get_tag('MP'))
-    locations = np.cumsum(deltas) + np.concatenate((np.zeros(shape=1),
-                                                    np.ones(shape=len(deltas) - 1))).astype('int')
-    base_index = np.array(
-        [i for i, letter in enumerate(read.get_forward_sequence()) if letter == base]
-    )
-    modified_bases = base_index[locations]
-    refpos = np.array(read.get_reference_positions(full_length=True))
-    if read.is_reverse:
-        refpos = np.flipud(refpos)
-        probabilities = probabilities[::-1]
-    return [(basemod, refpos[modified_bases], probabilities)]
+    if read.has_tag('MM'):
+        basemod = read.get_tag('MM').split(',', 1)[0]
+        if '-' in basemod:
+            sys.exit("ERROR: modifications on negative strand currently unsupported.")
+        base, mod = basemod.split('+')
+        deltas = [int(i) for i in read.get_tag('MM').split(',')[1:]]
+        probabilities = phred_to_probability(read.get_tag('MP'))
+        locations = np.cumsum(deltas) + np.concatenate(
+            (np.zeros(shape=1),
+             np.ones(shape=len(deltas) - 1))).astype('int')
+        base_index = np.array(
+            [i for i, letter in enumerate(read.get_forward_sequence()) if letter == base]
+        )
+        modified_bases = base_index[locations]
+        refpos = np.array(read.get_reference_positions(full_length=True))
+        if read.is_reverse:
+            refpos = np.flipud(refpos)
+            probabilities = probabilities[::-1]
+        return (basemod, refpos[modified_bases], probabilities)
+    else:
+        return (None, [None], [None])
 
 
 def errs_tab(n):

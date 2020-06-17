@@ -48,7 +48,14 @@ def parse_nanopolish(filename, file_type, name, window, smoothen=5):
 
     if window:
         gr = gr[window.chromosome, window.begin:window.end]
-    gr.pos = np.floor(gr.drop().df[["Start", "End"]].mean(axis=1))
+    try:
+        gr.pos = np.floor(gr.drop().df[["Start", "End"]].mean(axis=1))
+    except KeyError:
+        sys.stderr.write("\n\n\nProblem parsing nanopolish file {}!\n".format(filename))
+        sys.stderr.write("Could it be that there are no calls in your selected window?\n")
+        sys.stderr.write("\n\n\nDetailed error:\n")
+        raise
+
     table = gr.df
 
     if file_type in ['nanopolish_call', 'nanopolish_phased']:

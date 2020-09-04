@@ -32,7 +32,7 @@ def update_call_stats(key, num_called_cpg_sites, is_methylated, sequence):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='Calculate methylation frequency per site')
-    parser.add_argument('-c', '--call-threshold', type=float, required=False, default=2.5)
+    parser.add_argument('-c', '--call-threshold', type=float, required=False, default=2)
     parser.add_argument('-i', '--input', type=str, required=False)
     parser.add_argument('-s', '--split-groups', action='store_true')
     args = parser.parse_args()
@@ -54,7 +54,7 @@ if __name__ == '__main__':
         llr = float(record['log_lik_ratio'])
 
         # Skip ambiguous call
-        if abs(llr) < args.call_threshold:
+        if abs(llr) < args.call_threshold * num_sites:
             continue
         sequence = record['sequence']
 

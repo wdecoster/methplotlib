@@ -27,7 +27,7 @@ if __name__ == '__main__':
     bed = pr.read_bed(args.bed).merge()
     result = main(gr, gr2, bed)
 
-    result = result[result.ORFDR <= args.cutoff]
+    result = result[result.FDR <= args.cutoff]
 
     if args.out == "-":
         import sys

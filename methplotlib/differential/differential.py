@@ -55,9 +55,8 @@ def main(a, b, bed):
 
     m1, c1, m2, c2 = m.methylated, m.calls, m.methylated_b, m.calls_b,
     fe = pr.stats.fisher_exact(c1 - m1, m1, c2 - m2, m2, pseudocount=0.01)
+    fe.insert(fe.shape[1], "FDR", pr.stats.fdr(fe.P))
 
-    fe.insert(fe.shape[1], "ORFDR", pr.stats.fdr(fe.P))
-
-    m = m.insert(fe[['OR', 'P']])
+    m = m.insert(fe[['OR', 'P', 'FDR']])
 
     return m

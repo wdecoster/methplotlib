@@ -1,18 +1,34 @@
 import pysam
 from argparse import ArgumentParser
-import pandas as pd
+import gzip
+import sys
 
 
 def main():
     args = get_args()
-    phase_info = pd.DataFrame(
-        data=[(read.query_name, read.get_tag('PS'), read.get_tag('HP'))
-              for read in pysam.AlignmentFile(args.bam).fetch() if read.has_tag('PS')],
-        columns=['read_name', 'PS', 'HP']) \
-        .set_index('read_name')
-    print(pd.read_csv(args.methylation, sep="\t")
-          .join(phase_info, on='read_name')
-          .to_csv(path_or_buf=None, sep="\t", na_rep="NaN", index=False))
+    current_chrom = ""
+    chrom_seen = []
+    meth = gzip.open(args.methylation, 'rt')
+    header = next(meth).rstrip().split('\t')
+    header.extend(['PS', 'HP'])
+    print('\t'.join(header))
+    for pos in meth:
+        line = pos.rstrip().split('\t')
+        if line[0] != current_chrom:
+            if line[0] in chrom_seen:
+                sys.stderr.write("WARNING: this script is for chromosome-sorted meth files only!")
+            sys.stderr.write(f"Switching to {line[0]}\n")
+            phased_reads = get_phase_status_dict(bam=args.bam, chrom=line[0])
+            current_chrom = line[0]
+            chrom_seen.append(line[0])
+        line.extend(phased_reads.get(line[4], ["NaN", "NaN"]))
+        print('\t'.join(line))
+
+
+def get_phase_status_dict(bam, chrom):
+    return {read.query_name: [str(read.get_tag('PS')), str(read.get_tag('HP'))]
+            for read in pysam.AlignmentFile(bam).fetch(contig=chrom)
+            if read.has_tag('PS')}
 
 
 def get_args():

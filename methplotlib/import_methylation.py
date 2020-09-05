@@ -41,7 +41,11 @@ def read_meth(filename, name, window, smoothen=5):
 
 
 def parse_nanopolish(filename, file_type, name, window, smoothen=5):
-    table = pd.read_csv(filename, sep="\t")
+    if window:
+        iter_csv = pd.read_csv(filename, sep="\t", iterator=True, chunksize=1e6)
+        table = pd.concat([chunk[chunk['chromosome'] == window.chromosome] for chunk in iter_csv])
+    else:
+        table = pd.read_csv(filename, sep="\t")
     gr = pr.PyRanges(table.rename(columns={"start": "Start", "chromosome": "Chromosome",
                                            "end": "End", "Strand": "strand"}))
     logging.info("Read the file in a dataframe.")

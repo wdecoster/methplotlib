@@ -77,6 +77,8 @@ def get_args():
     parser.add_argument("--split",
                         help="split, rather than overlay the methylation tracks",
                         action="store_true")
+    parser.add_argument("--static",
+                        help="Make a static image of the browser window")
     parser.add_argument("--smooth",
                         help="When plotting frequencies points are averaged using a rolling window",
                         type=int,

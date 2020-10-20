@@ -31,7 +31,7 @@ setup(
     keywords='nanopore',
     packages=find_packages(),
     python_requires='>=3',
-    install_requires=['plotly>=4.1.1',
+    install_requires=['plotly>=4.9.0',
                       'numpy>=1.14.3',
                       'pandas>=0.23.4',
                       'pyranges>=0.0.77',

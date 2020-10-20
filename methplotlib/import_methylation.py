@@ -33,8 +33,10 @@ def read_meth(filename, name, window, smoothen=5):
             return parse_nanocompore(filename, name, window)
         elif file_type == "ont-cram":
             return parse_ont_cram(filename, name, window)
-    except Exception:
-        sys.stderr.write("\n\n\nInput file {} not recognized!\n".format(filename))
+    except Exception as e:
+        logging.error("Error processing {}.".format(filename))
+        logging.error(e, exc_info=True)
+        sys.stderr.write("\n\n\nError processing {}!\n".format(filename))
         sys.stderr.write("\n\n\nDetailed error:\n")
         raise
 

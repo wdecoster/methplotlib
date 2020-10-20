@@ -4,7 +4,6 @@ import numpy as np
 import sys
 import logging
 from methplotlib.utils import file_sniffer
-import pysam
 
 
 class Methylation(object):
@@ -34,16 +33,42 @@ def read_meth(filename, name, window, smoothen=5):
             return parse_nanocompore(filename, name, window)
         elif file_type == "ont-cram":
             return parse_ont_cram(filename, name, window)
-    except Exception:
-        sys.stderr.write("\n\n\nInput file {} not recognized!\n".format(filename))
+    except Exception as e:
+        logging.error("Error processing {}.".format(filename))
+        logging.error(e, exc_info=True)
+        sys.stderr.write("\n\n\nError processing {}!\n".format(filename))
         sys.stderr.write("\n\n\nDetailed error:\n")
         raise
 
 
 def parse_nanopolish(filename, file_type, name, window, smoothen=5):
     if window:
-        iter_csv = pd.read_csv(filename, sep="\t", iterator=True, chunksize=1e6)
-        table = pd.concat([chunk[chunk['chromosome'] == window.chromosome] for chunk in iter_csv])
+        from pathlib import Path
+        if Path(filename + '.tbi').is_file():
+            import subprocess
+            import gzip
+            logging.info("Reading {} using a tabix stream.".format(filename))
+
+            region = "{}:{}-{}".format(window.chromosome, window.begin, window.end)
+            try:
+                tabix_stream = subprocess.Popen(['tabix', filename, region],
+                                                stdout=subprocess.PIPE,
+                                                stderr=subprocess.PIPE)
+            except FileNotFoundError as e:
+                logging.error("Error when opening a tabix stream.")
+                logging.error(e, exc_info=True)
+                sys.stderr.write("\n\nERROR when opening a tabix stream.\n")
+                sys.stderr.write("Is tabix installed and on the PATH?.")
+                raise
+            header = gzip.open(filename, 'rt').readline().rstrip().split('\t')
+            table = pd.read_csv(tabix_stream.stdout, sep='\t', header=None, names=header)
+        else:
+            logging.info("Reading {} by splitting the file in chunks.".format(filename))
+            sys.stderr.write("\nReading {} would be faster with bgzip and tabix.\n")
+            sys.stderr.write("Please index with 'tabix -b3 -s1 -S1 -e4.\n'")
+            iter_csv = pd.read_csv(filename, sep="\t", iterator=True, chunksize=1e6)
+            table = pd.concat([chunk[chunk['chromosome'] == window.chromosome]
+                               for chunk in iter_csv])
     else:
         table = pd.read_csv(filename, sep="\t")
     gr = pr.PyRanges(table.rename(columns={"start": "Start", "chromosome": "Chromosome",
@@ -110,6 +135,7 @@ def parse_nanocompore(filename, name, window):
 
 
 def parse_ont_cram(filename, name, window):
+    import pysam
     cram = pysam.AlignmentFile(filename, "rc")
     data = []
     for read in cram.fetch(reference=window.chromosome, start=window.begin, end=window.end):

@@ -31,13 +31,14 @@ def main():
                      simplify=args.simplify,
                      split=args.split,
                      outfile=args.outfile,
-                     dotsize=args.dotsize
+                     dotsize=args.dotsize,
+                     static=args.static
                      )
     logging.info("Finished!")
 
 
 def meth_browser(meth_data, window, gtf=False, bed=False, simplify=False,
-                 split=False, outfile=None, dotsize=4):
+                 split=False, outfile=None, dotsize=4, static=False):
     """
     meth_Data is a list of Methylation objects from the import_methylation submodule
     annotation is optional and is a gtf or bed file
@@ -121,6 +122,9 @@ def meth_browser(meth_data, window, gtf=False, bed=False, simplify=False,
                          hovermode='closest',
                          plot_bgcolor='rgba(0,0,0,0)')
     utils.create_browser_output(fig, outfile, window)
+    if static:
+        import plotly.io as pio
+        pio.write_image(fig, static, engine="kaleido")
 
 
 def create_subplots(num_methrows, split, names=None, annotation=True):

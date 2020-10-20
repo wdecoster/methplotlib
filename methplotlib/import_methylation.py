@@ -4,7 +4,6 @@ import numpy as np
 import sys
 import logging
 from methplotlib.utils import file_sniffer
-import pysam
 
 
 class Methylation(object):
@@ -110,6 +109,7 @@ def parse_nanocompore(filename, name, window):
 
 
 def parse_ont_cram(filename, name, window):
+    import pysam
     cram = pysam.AlignmentFile(filename, "rc")
     data = []
     for read in cram.fetch(reference=window.chromosome, start=window.begin, end=window.end):

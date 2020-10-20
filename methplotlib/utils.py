@@ -5,9 +5,6 @@ from methplotlib.version import __version__
 from datetime import datetime as dt
 from time import time
 import logging
-import binascii
-import gzip
-from pyfaidx import Fasta
 import plotly
 
 
@@ -28,6 +25,7 @@ class Region(object):
                 sys.exit("A fasta reference file is required if --window "
                          "is an entire chromosome, contig or transcript")
             else:
+                from pyfaidx import Fasta
                 self.chromosome = region
                 self.begin = 0
                 self.string = region
@@ -145,6 +143,7 @@ methplotlib -m {meth} \\
 
 
 def is_gz_file(filepath):
+    import binascii
     with open(filepath, 'rb') as test_f:
         return binascii.hexlify(test_f.read(2)) == b'1f8b'
 
@@ -161,6 +160,7 @@ def file_sniffer(filename):
     if is_cram_file(filename):
         return "ont-cram"
     if is_gz_file(filename):
+        import gzip
         header = gzip.open(filename, 'rt').readline()
     else:
         header = open(filename, 'r').readline()

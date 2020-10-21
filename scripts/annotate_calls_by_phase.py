@@ -34,7 +34,7 @@ def get_phase_status_dict(bam, chrom):
 def get_args():
     parser = ArgumentParser(description="Split a nanopolish call-methylation file by haplotypes")
     parser.add_argument("methylation", help="File created by nanopolish call-methylation")
-    parser.add_argument("bam", help="bam file created by whatshap haplotag")
+    parser.add_argument("bam", help="bam file created by whatshap haplotag or longshot")
     return parser.parse_args()
 
 

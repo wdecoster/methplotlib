@@ -1,5 +1,5 @@
 from argparse import ArgumentParser
-import gzip
+import bgzip
 import pandas as pd
 
 
@@ -7,11 +7,11 @@ def main():
     args = get_args()
 
     if args.naive:
-        phased_calls = gzip.open(args.phased_methylation, 'rt')
+        phased_calls = bgzip.open(args.phased_methylation, 'rt')
 
-        phase1 = gzip.open(args.prefix + "_phase1.tsv.gz", 'wt')
-        phase2 = gzip.open(args.prefix + "_phase2.tsv.gz", 'wt')
-        uphase = gzip.open(args.prefix + "_unphased.tsv.gz", 'wt')
+        phase1 = bgzip.open(args.prefix + "_phase1.tsv.gz", 'wt')
+        phase2 = bgzip.open(args.prefix + "_phase2.tsv.gz", 'wt')
+        uphase = bgzip.open(args.prefix + "_unphased.tsv.gz", 'wt')
 
         header = next(phased_calls)
         for output in [phase1, phase2, uphase]:

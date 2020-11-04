@@ -123,7 +123,7 @@ def methylation(meth_data, dotsize=4):
             )
             split = True
         else:
-            sys.exit("ERROR: unrecognized data type {}".format(meth.data_type))
+            sys.exit(f"ERROR: unrecognized data type {meth.data_type}")
         types.append(meth.data_type)
         names.append(meth.name)
     return DataTraces(traces=traces,
@@ -132,13 +132,13 @@ def methylation(meth_data, dotsize=4):
                       split=split)
 
 
-def make_per_read_meth_traces_phred(table, max_coverage=100, dotsize=4):
+def make_per_read_meth_traces_phred(table, max_cov=100, dotsize=4):
     """Make traces for each read"""
     minmax_table = find_min_and_max_pos_per_read(table)
-    df_heights = assign_y_height_per_read(minmax_table, max_coverage=max_coverage)
+    df_heights = assign_y_height_per_read(minmax_table, max_coverage=max_cov)
     table = table.join(df_heights, on="read_name")
     traces = []
-    hidden_reads = 0
+    hidden = 0
     for read in table["read_name"].unique():
         strand = table.loc[table["read_name"] == read, "strand"].values[0]
         try:
@@ -148,25 +148,24 @@ def make_per_read_meth_traces_phred(table, max_coverage=100, dotsize=4):
                                          strand=strand)
             )
         except KeyError:
-            hidden_reads += 1
+            hidden += 1
             continue
-    if hidden_reads:
-        sys.stderr.write("Warning: hiding {} reads because coverage above {}x.\n".format(
-            hidden_reads, max_coverage))
+    if hidden:
+        sys.stderr.write(f"Warning: hiding {hidden} reads because coverage above {max_cov}x.\n")
     traces.append(
         make_per_position_phred_scatter(read_table=table, dotsize=dotsize)
     )
     return traces
 
 
-def make_per_read_meth_traces_llr(table, phased=False, max_coverage=100, dotsize=4):
+def make_per_read_meth_traces_llr(table, phased=False, max_cov=100, dotsize=4):
     """Make traces for each read"""
     minmax_table = find_min_and_max_pos_per_read(table, phased=phased)
-    df_heights = assign_y_height_per_read(minmax_table, phased=phased, max_coverage=max_coverage)
+    df_heights = assign_y_height_per_read(minmax_table, phased=phased, max_coverage=max_cov)
     table = table.join(df_heights, on="read_name")
     table.loc[:, "llr_scaled"] = rescale_log_likelihood_ratio(table["log_lik_ratio"].copy())
     traces = []
-    hidden_reads = 0
+    hidden = 0
     for read in table["read_name"].unique():
         strand = table.loc[table["read_name"] == read, "strand"].values[0]
         if phased:
@@ -181,11 +180,10 @@ def make_per_read_meth_traces_llr(table, phased=False, max_coverage=100, dotsize
                                          phase=phase)
             )
         except KeyError:
-            hidden_reads += 1
+            hidden += 1
             continue
-    if hidden_reads:
-        sys.stderr.write("Warning: hiding {} reads because coverage above {}x.\n".format(
-            hidden_reads, max_coverage))
+    if hidden:
+        sys.stderr.write(f"Warning: hiding {hidden} reads because coverage above {max_cov}x.\n")
     traces.append(
         make_per_position_likelihood_scatter(read_table=table, dotsize=dotsize)
     )

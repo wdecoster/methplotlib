@@ -34,9 +34,9 @@ def read_meth(filename, name, window, smoothen=5):
         elif file_type == "ont-cram":
             return parse_ont_cram(filename, name, window)
     except Exception as e:
-        logging.error("Error processing {}.".format(filename))
+        logging.error(f"Error processing {filename}.")
         logging.error(e, exc_info=True)
-        sys.stderr.write("\n\n\nError processing {}!\n".format(filename))
+        sys.stderr.write(f"\n\n\nError processing {filename}!\n")
         sys.stderr.write("\n\n\nDetailed error:\n")
         raise
 

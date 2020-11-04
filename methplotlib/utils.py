@@ -20,7 +20,7 @@ class Region(object):
                          "examples of accepted formats are:\n"
                          "'chr5:150200605-150423790' or 'ENST00000647408'\n\n")
             self.size = self.end - self.begin
-            self.string = "{}_{}_{}".format(self.chromosome, self.begin, self.end)
+            self.string = f"{self.chromosome}_{self.begin}_{self.end}"
         else:  # When region is an entire chromosome, contig or transcript
             if fasta is None:
                 sys.exit("A fasta reference file is required if --window "
@@ -35,18 +35,15 @@ class Region(object):
 
 
 def make_windows(full_window, max_size=1e6, fasta=None):
-    full_reg = Region(full_window, fasta)
-    if full_reg.size > max_size:
-        chunks = ceil(full_reg.size / max_size)
-        chunksize = ceil(full_reg.size / chunks)
+    reg = Region(full_window, fasta)
+    if reg.size > max_size:
+        chunks = ceil(reg.size / max_size)
+        chsize = ceil(reg.size / chunks)
         return [
-            Region("{}:{}-{}".format(
-                full_reg.chromosome,
-                full_reg.begin + i * chunksize,
-                full_reg.begin + (i + 1) * chunksize))
+            Region(f"{reg.chromosome}:{reg.begin + i * chsize}-{reg.begin + (i + 1) * chsize}")
             for i in range(chunks)]
     else:
-        return [full_reg]
+        return [reg]
 
 
 def get_args():
@@ -54,7 +51,7 @@ def get_args():
     parser.add_argument("-v", "--version",
                         help="Print version and exit.",
                         action="version",
-                        version='methplotlib {}'.format(__version__))
+                        version=f'methplotlib {__version__}')
     parser.add_argument("-m", "--methylation",
                         nargs='+',
                         help="methylation data in nanopolish, nanocompore or ont-cram format",
@@ -120,8 +117,10 @@ def init_logs(args):
         format='%(asctime)s %(message)s',
         handlers=handlers,
         level=logging.INFO)
-    logging.info('methplotlib {} started.\nPython version is: {}\nArguments are: {}'.format(
-        __version__, sys.version.replace('\n', ' '), args))
+    logging.info(f'methplotlib {__version__} started.')
+    py_version = sys.version.replace('\n', ' ')
+    logging.info(f'Python version is: {py_version}')
+    logging.info(f'Arguments are: {args}')
 
 
 def print_example():
@@ -131,7 +130,7 @@ def print_example():
     bed = pkg_resources.resource_filename("methplotlib", "examples/DNAse_cluster.bed.gz")
     annotation = pkg_resources.resource_filename("methplotlib", "examples/g38_locus.gtf.gz")
 
-    example = """
+    example = f"""
 methplotlib -m {meth} \\
                {meth_freq} \\
             -n calls frequencies \\
@@ -139,8 +138,7 @@ methplotlib -m {meth} \\
             -g {annotation} \\
             --simplify \\
             -b {bed} \\
-            -o '{{region}}/example.html'""".strip().format(meth=meth, meth_freq=meth_freq,
-                                                           annotation=annotation, bed=bed)
+            -o '{{region}}/example.html'""".strip()
     print(example)
     sys.exit(0)
 
@@ -215,7 +213,7 @@ def create_subplots(num_methrows, split, names=None, annotation=True):
 
 def create_browser_output(fig, outfile, window):
     if outfile is None:
-        outfile = "methylation_browser_{}.html".format(window.string)
+        outfile = f"methylation_browser_{window.string}.html"
     else:
         from pathlib import Path
 

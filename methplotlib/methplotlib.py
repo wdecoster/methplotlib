@@ -54,7 +54,7 @@ def meth_browser(meth_data, window, gtf=False, bed=False, simplify=False,
         num_methrows = len(meth_data)
         logging.info(f'Making browser in split mode, with {num_methrows} modification rows.')
         annot_row = num_methrows + 1
-        annot_axis = 'yaxis{}'.format(annot_row)
+        annot_axis = f'yaxis{annot_row}'
         fig = utils.create_subplots(num_methrows,
                                     split=True,
                                     names=meth_traces.names,
@@ -64,17 +64,17 @@ def meth_browser(meth_data, window, gtf=False, bed=False, simplify=False,
             for meth_trace in sample_traces:
                 fig.append_trace(trace=meth_trace, row=y, col=1)
             if sample_type == 'nanopolish_freq':
-                fig["layout"]["yaxis{}".format(y)].update(title="Modified <br> frequency")
+                fig["layout"][f"yaxis{y}"].update(title="Modified <br> frequency")
                 fig["layout"].update(showlegend=False)
                 fig["layout"].update(legend=dict(orientation='h'))
             elif sample_type in ['nanopolish_call', 'nanopolish_phased']:
-                fig["layout"]["yaxis{}".format(y)].update(title="Reads")
+                fig["layout"][f"yaxis{y}"].update(title="Reads")
                 fig["layout"].update(showlegend=False)
             elif sample_type == 'nanocompore':
-                fig["layout"]["yaxis{}".format(y)].update(title="-log10(pval)")
+                fig["layout"][f"yaxis{y}"].update(title="-log10(pval)")
                 fig["layout"].update(legend=dict(orientation='h'))
             elif sample_type == 'ont-cram':
-                fig["layout"]["yaxis{}".format(y)].update(title="Reads")
+                fig["layout"][f"yaxis{y}"].update(title="Reads")
             else:
                 sys.exit(f"ERROR: unrecognized data type {sample_type}")
     else:

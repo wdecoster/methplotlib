@@ -8,7 +8,7 @@ import plotly.graph_objs as go
 def qc_plots(meth_data, window, qcpath=None, outpath=None):
 
     if qcpath is None and outpath is None:
-        outfile = "qc_report_{}.html".format(window.string)
+        outfile = f"qc_report_{window.string}.html"
     elif qcpath is None:
         from pathlib import Path, PosixPath
         p = Path(outpath.format(region=window.string))
@@ -64,10 +64,8 @@ def pairwise_correlation_plot(full):
         plot_bgcolor='rgba(240,240,240, 0.95)')
 
     for i in range(1, len(full.columns) + 1):
-        layout["xaxis{}".format(i)] = dict(
-            showline=True, zeroline=False, gridcolor='#fff', ticklen=4)
-        layout["yaxis{}".format(i)] = dict(
-            showline=True, zeroline=False, gridcolor='#fff', ticklen=4)
+        layout[f"xaxis{i}"] = dict(showline=True, zeroline=False, gridcolor='#fff', ticklen=4)
+        layout[f"yaxis{i}"] = dict(showline=True, zeroline=False, gridcolor='#fff', ticklen=4)
 
     return plotly.offline.plot(dict(data=[trace], layout=layout),
                                output_type="div",

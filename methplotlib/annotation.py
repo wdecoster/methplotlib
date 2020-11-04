@@ -87,7 +87,7 @@ def parse_annotation(gtff, window, simplify=False):
     return as Transcript objects
     """
     type = annot_file_sniffer(gtff)
-    logging.info("Parsing {} file...".format(type))
+    logging.info(f"Parsing {type} file...")
     df = pd.DataFrame(data=[get_features(line, type=type)
                             for line in open_gtf(gtff) if good_record(line, window.chromosome)],
                       columns=['chromosome', 'begin', 'end', 'strand', 'gene', 'transcript'])
@@ -106,8 +106,8 @@ def parse_annotation(gtff, window, simplify=False):
                                            name=None),
                                strand=gtable["strand"].tolist()[0])
                 )
-        sys.stderr.write("Found {} gene(s) in the region.\n".format(len(res)))
-        logging.info("Found {} gene(s) in the region.\n".format(len(res)))
+        sys.stderr.write(f"Found {len(res)} gene(s) in the region.\n")
+        logging.info(f"Found {len(res)} gene(s) in the region.\n")
     else:
         res = []
         for t in transcripts_in_window(df, window, feature="transcript"):
@@ -120,8 +120,8 @@ def parse_annotation(gtff, window, simplify=False):
                                                                               name=None),
                            strand=tr["strand"].tolist()[0])
             )
-        sys.stderr.write("Found {} transcript(s) in the region.\n".format(len(res)))
-        logging.info("Found {} transcript(s) in the region.\n".format(len(res)))
+        sys.stderr.write(f"Found {len(res)} transcript(s) in the region.\n")
+        logging.info(f"Found {len(res)} transcript(s) in the region.\n")
     assign_colors_to_genes(res)
     return res
 

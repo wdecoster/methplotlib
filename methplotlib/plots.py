@@ -91,9 +91,7 @@ def bed_annotation(bed, window):
 
 def methylation(meth_data, dotsize=4):
     """
-    Call function get_data to parse files from nanopolish,
-     either the methylation calls (nanopolish_call) or those from calculate_methylation_frequency
-    Return per dataset a list of one (if frequency) or lots of (if nanopolish_call) plotly traces
+    Plot methylation traces from various data types
     """
     traces = []
     types = []
@@ -122,6 +120,16 @@ def methylation(meth_data, dotsize=4):
                                                 dotsize=dotsize)
             )
             split = True
+        elif meth.data_type == 'bedgraph':
+            starts = meth.table["Start"]
+            ends = meth.table["End"]
+            vals = meth.table["Value"]
+            traces.append(
+                [go.Scatter(x=[val for pair in zip(starts, ends) for val in pair],
+                            y=[val for pair in zip(vals, vals) for val in pair],
+                            mode='lines',
+                            name=meth.name,
+                            hoverinfo='name')])
         else:
             sys.exit(f"ERROR: unrecognized data type {meth.data_type}")
         types.append(meth.data_type)

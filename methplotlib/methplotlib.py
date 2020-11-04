@@ -75,6 +75,8 @@ def meth_browser(meth_data, window, gtf=False, bed=False, simplify=False,
                 fig["layout"].update(legend=dict(orientation='h'))
             elif sample_type == 'ont-cram':
                 fig["layout"][f"yaxis{y}"].update(title="Reads")
+            elif sample_type == 'bedgraph':
+                fig["layout"][f"yaxis{y}"].update(title="Value")
             else:
                 sys.exit(f"ERROR: unrecognized data type {sample_type}")
     else:
@@ -84,9 +86,15 @@ def meth_browser(meth_data, window, gtf=False, bed=False, simplify=False,
         annot_axis = 'yaxis2'
         fig = utils.create_subplots(num_methrows, split=False, annotation=bool(bed or gtf))
         for meth_trace in meth_traces.traces:
-            fig.append_trace(trace=meth_trace[0], row=1, col=1)
+            for trace in meth_trace:
+                fig.append_trace(trace=trace, row=1, col=1)
         fig["layout"].update(legend=dict(orientation='h'))
-        fig["layout"]['yaxis'].update(title="Modified <br> frequency")
+        if meth_traces.types[0] == 'nanopolish_freq':
+            fig["layout"]['yaxis'].update(title="Modified <br> frequency")
+        elif meth_traces.types[0] == 'bedgraph':
+            fig["layout"]["yaxis"].update(title="Value")
+        else:
+            sys.exit(f"ERROR: unexpectedly not splitting for input of type {sample_type}")
     logging.info("Prepared modification plots.")
 
     if bed:

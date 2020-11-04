@@ -197,7 +197,7 @@ def create_subplots(num_methrows, split, names=None, annotation=True):
             specs=[[{}] for i in range(num_methrows + annotation)],
             print_grid=False,
             subplot_titles=names,
-            vertical_spacing=0.1,
+            vertical_spacing=0.1 if num_methrows < 10 else 0.01,
             row_heights=[0.9 / num_methrows] * num_methrows + [0.1] * annotation
 
         )
@@ -208,7 +208,7 @@ def create_subplots(num_methrows, split, names=None, annotation=True):
             shared_xaxes=True,
             specs=[[{'rowspan': num_methrows}], [None], [None], [None]] + [[{}]] * annotation,
             print_grid=False,
-            vertical_spacing=0.1,
+            vertical_spacing=0.1 if num_methrows < 10 else 0.01,
             row_heights=[0.9, 0, 0, 0] + [0.1] * annotation
         )
 

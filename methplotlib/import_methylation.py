@@ -14,6 +14,22 @@ class Methylation(object):
         self.called_sites = called_sites
 
 
+def get_data(methylation_files, names, window, smoothen=5):
+    """
+    Import methylation data from all files in the list methylation_files
+
+    Data can in various formats
+    - nanopolish raw, phased, frequency
+    - cram
+    - nanocompore
+    - bedgraph
+
+    data is extracted within the window args.window
+    Frequencies are smoothened using a sliding window
+    """
+    return [read_meth(f, n, window, smoothen) for f, n in zip(methylation_files, names)]
+
+
 def read_meth(filename, name, window, smoothen=5):
     """
     converts a file from nanopolish to a pandas dataframe
@@ -33,6 +49,8 @@ def read_meth(filename, name, window, smoothen=5):
             return parse_nanocompore(filename, name, window)
         elif file_type == "ont-cram":
             return parse_ont_cram(filename, name, window)
+        elif file_type == 'bedgraph':
+            return parse_bedgraph(filename, name, window)
     except Exception as e:
         logging.error(f"Error processing {filename}.")
         logging.error(e, exc_info=True)
@@ -136,6 +154,48 @@ def parse_nanocompore(filename, name, window):
         called_sites=len(table))
 
 
+def parse_bedgraph(filename, name, window):
+    if window:
+        from pathlib import Path
+        if Path(filename + '.tbi').is_file():
+            import subprocess
+            logging.info(f"Reading {filename} using a tabix stream.")
+            region = f"{window.chromosome}:{window.begin}-{window.end}"
+            try:
+                tabix_stream = subprocess.Popen(['tabix', filename, region],
+                                                stdout=subprocess.PIPE,
+                                                stderr=subprocess.PIPE)
+            except FileNotFoundError as e:
+                logging.error("Error when opening a tabix stream.")
+                logging.error(e, exc_info=True)
+                sys.stderr.write("\n\nERROR when opening a tabix stream.\n")
+                sys.stderr.write("Is tabix installed and on the PATH?.")
+                raise
+            table = pd.read_csv(tabix_stream.stdout, sep='\t', header=None,
+                                names=['Chromosome', 'Start', 'End', 'Value'])
+        else:
+            logging.info(f"Reading {filename} slowly by splitting the file in chunks.")
+            sys.stderr.write(
+                f"\nReading {filename} would be faster with bgzip and 'tabix -p bed'.\n")
+            iter_csv = pd.read_csv(filename, sep="\t", iterator=True, chunksize=1e6)
+            table = pd.concat([chunk[chunk['chromosome'] == window.chromosome]
+                               for chunk in iter_csv])
+    else:
+        table = pd.read_csv(filename, sep="\t", header=None,
+                            names=['Chromosome', 'Start', 'End', 'Value'])
+    gr = pr.PyRanges(table)
+    logging.info("Read the file in a dataframe.")
+    if window:
+        gr = gr[window.chromosome, window.begin:window.end]
+        if len(gr.df) == 0:
+            sys.exit(f"No records for {filename} in {window.string}!\n")
+    return Methylation(
+        table=gr.df.sort_values('Start'),
+        data_type="bedgraph",
+        name=name,
+        called_sites=len(table))
+
+
 def parse_ont_cram(filename, name, window):
     import pysam
     cram = pysam.AlignmentFile(filename, "rc")
@@ -190,15 +250,3 @@ def errs_tab(n):
 
 def phred_to_probability(quals, tab=errs_tab(128)):
     return [tab[ord(q) - 33] for q in quals]
-
-
-def get_data(methylation_files, names, window, smoothen=5):
-    """
-    Import methylation data from all files in the list methylation_files
-
-    Data can be either frequency or raw.
-
-    data is extracted within the window args.window
-    Frequencies are smoothened using a sliding window
-    """
-    return [read_meth(f, n, window, smoothen) for f, n in zip(methylation_files, names)]

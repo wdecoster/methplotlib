@@ -167,6 +167,7 @@ def file_sniffer(filename):
         header = gzip.open(filename, 'rt').readline()
     else:
         header = open(filename, 'r').readline()
+
     if "GMM_anova_pvalue" in header:
         return "nanocompore"
     if "log_lik_methylated" in header:
@@ -176,8 +177,9 @@ def file_sniffer(filename):
             return "nanopolish_call"
     if "num_motifs_in_group" in header:
         return "nanopolish_freq"
-    else:
-        sys.exit(f"\n\n\nInput file {filename} not recognized!\n")
+    if len(header.split('\t')) == 4:
+        return 'bedgraph'  # there is no header, but the file is tab separated and has 4 fields
+    sys.exit(f"\n\n\nInput file {filename} not recognized!\n")
 
 
 def create_subplots(num_methrows, split, names=None, annotation=True):

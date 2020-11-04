@@ -14,6 +14,22 @@ class Methylation(object):
         self.called_sites = called_sites
 
 
+def get_data(methylation_files, names, window, smoothen=5):
+    """
+    Import methylation data from all files in the list methylation_files
+
+    Data can in various formats
+    - nanopolish raw, phased, frequency
+    - cram
+    - nanocompore
+    - bedgraph
+
+    data is extracted within the window args.window
+    Frequencies are smoothened using a sliding window
+    """
+    return [read_meth(f, n, window, smoothen) for f, n in zip(methylation_files, names)]
+
+
 def read_meth(filename, name, window, smoothen=5):
     """
     converts a file from nanopolish to a pandas dataframe
@@ -190,15 +206,3 @@ def errs_tab(n):
 
 def phred_to_probability(quals, tab=errs_tab(128)):
     return [tab[ord(q) - 33] for q in quals]
-
-
-def get_data(methylation_files, names, window, smoothen=5):
-    """
-    Import methylation data from all files in the list methylation_files
-
-    Data can be either frequency or raw.
-
-    data is extracted within the window args.window
-    Frequencies are smoothened using a sliding window
-    """
-    return [read_meth(f, n, window, smoothen) for f, n in zip(methylation_files, names)]

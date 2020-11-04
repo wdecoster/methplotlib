@@ -112,6 +112,9 @@ def meth_browser(meth_data, window, gtf=False, bed=False, simplify=False,
                          title="Nucleotide modifications",
                          hovermode='closest',
                          plot_bgcolor='rgba(0,0,0,0)')
+    if num_methrows > 10:
+        for i in fig['layout']['annotations']:
+            i['font']['size'] = 10
     utils.create_browser_output(fig, outfile, window)
     if static:
         import plotly.io as pio

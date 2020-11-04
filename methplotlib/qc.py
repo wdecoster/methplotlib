@@ -5,6 +5,37 @@ import plotly
 import plotly.graph_objs as go
 
 
+def qc_plots(meth_data, window, qcpath=None, outpath=None):
+
+    if qcpath is None and outpath is None:
+        outfile = "qc_report_{}.html".format(window.string)
+    elif qcpath is None:
+        from pathlib import Path, PosixPath
+        p = Path(outpath.format(region=window.string))
+        Path.mkdir(p.parent, exist_ok=True, parents=True)
+        outfile = str(p.parent / PosixPath("qc_" + p.stem + ".html"))
+    else:
+        from pathlib import Path
+        p = Path(qcpath)
+        Path.mkdir(p.parent, exist_ok=True, parents=True)
+        outfile = qcpath
+
+    with open(outfile, 'w') as qc_report:
+        qc_report.write(num_sites_bar(meth_data))
+        if len([m for m in meth_data if m.data_type == "nanopolish_freq"]) > 0:
+            data = [m.table.rename({"methylated_frequency": m.name}, axis='columns')
+                    for m in meth_data if m.data_type == "nanopolish_freq"]
+            full = data[0].join(data[1:]).dropna(how="any", axis="index")
+            qc_report.write(modified_fraction_histogram(full))
+        if len([m for m in meth_data if m.data_type == "nanopolish_freq"]) > 2:
+            qc_report.write(pairwise_correlation_plot(full))
+            qc_report.write(pca(full))
+            qc_report.write(global_box(data))
+        if len([m for m in meth_data
+                if m.data_type in ["nanopolish_call", "nanopolish_phased"]]) > 2:
+            pass
+
+
 def num_sites_bar(meth_data):
     trace = go.Bar(x=[m.name for m in meth_data],
                    y=[m.called_sites for m in meth_data])

@@ -22,7 +22,7 @@ def main():
                 obj=meth_data,
                 file=open(f"methplotlib-data-{window.string}.pickle", 'wb'))
         logging.info(f"Collected methylation data for {len(meth_data)} datasets")
-        qc_plots(meth_data, window, qcpath=args.qcfile, outpath=args.outfile)
+        qc.qc_plots(meth_data, window, qcpath=args.qcfile, outpath=args.outfile)
         logging.info("Created QC plots")
         meth_browser(meth_data=meth_data,
                      window=window,
@@ -158,37 +158,6 @@ def create_subplots(num_methrows, split, names=None, annotation=True):
             vertical_spacing=0.1,
             row_heights=[0.9, 0, 0, 0] + [0.1] * annotation
         )
-
-
-def qc_plots(meth_data, window, qcpath=None, outpath=None):
-
-    if qcpath is None and outpath is None:
-        outfile = "qc_report_{}.html".format(window.string)
-    elif qcpath is None:
-        from pathlib import Path, PosixPath
-        p = Path(outpath)
-        Path.mkdir(p.parent, exist_ok=True, parents=True)
-        outfile = str(p.parent / PosixPath("qc_" + p.stem + ".html"))
-    else:
-        from pathlib import Path
-        p = Path(qcpath)
-        Path.mkdir(p.parent, exist_ok=True, parents=True)
-        outfile = qcpath
-
-    with open(outfile, 'w') as qc_report:
-        qc_report.write(qc.num_sites_bar(meth_data))
-        if len([m for m in meth_data if m.data_type == "nanopolish_freq"]) > 0:
-            data = [m.table.rename({"methylated_frequency": m.name}, axis='columns')
-                    for m in meth_data if m.data_type == "nanopolish_freq"]
-            full = data[0].join(data[1:]).dropna(how="any", axis="index")
-            qc_report.write(qc.modified_fraction_histogram(full))
-        if len([m for m in meth_data if m.data_type == "nanopolish_freq"]) > 2:
-            qc_report.write(qc.pairwise_correlation_plot(full))
-            qc_report.write(qc.pca(full))
-            qc_report.write(qc.global_box(data))
-        if len([m for m in meth_data
-                if m.data_type in ["nanopolish_call", "nanopolish_phased"]]) > 2:
-            pass
 
 
 if __name__ == '__main__':

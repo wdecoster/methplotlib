@@ -146,4 +146,6 @@ def parse_bed(bed, window):
     gr = pr.read_bed(bed)[window.chromosome, window.begin:window.end]
     df = gr.unstrand().df
     df = df.drop(columns=["Chromosome", "Score", "Strand"], errors='ignore')
+    if "Name" not in df.columns:
+        df["Name"] = "noname"
     return df.itertuples(index=False, name=None)

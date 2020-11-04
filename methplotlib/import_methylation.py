@@ -63,8 +63,8 @@ def parse_nanopolish(filename, file_type, name, window, smoothen=5):
             table = pd.read_csv(tabix_stream.stdout, sep='\t', header=None, names=header)
         else:
             logging.info(f"Reading {filename} slowly by splitting the file in chunks.")
-            sys.stderr.write("\nReading {} would be faster with bgzip and tabix.\n")
-            sys.stderr.write("Please index with 'tabix -b3 -s1 -S1 -e4.\n'")
+            sys.stderr.write("\nReading {filename} would be faster with bgzip and tabix.\n")
+            sys.stderr.write("Please index with 'tabix -b3 -s1 -S1 -e4'.\n")
             iter_csv = pd.read_csv(filename, sep="\t", iterator=True, chunksize=1e6)
             table = pd.concat([chunk[chunk['chromosome'] == window.chromosome]
                                for chunk in iter_csv])

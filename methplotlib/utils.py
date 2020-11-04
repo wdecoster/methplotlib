@@ -6,6 +6,7 @@ from datetime import datetime as dt
 from time import time
 import logging
 import plotly
+from pathlib import Path
 
 
 class Region(object):
@@ -159,6 +160,8 @@ def file_sniffer(filename):
     """
     Takes in a filename and tries to guess the input file type
     """
+    if not Path(filename).is_file():
+        sys.exit(f"\n\nERROR: File {filename} does not exist, please check the path!\n")
     if is_cram_file(filename):
         return "ont-cram"
     if is_gz_file(filename):
@@ -176,7 +179,7 @@ def file_sniffer(filename):
     if "num_motifs_in_group" in header:
         return "nanopolish_freq"
     else:
-        sys.exit("\n\n\nInput file {} not recognized!\n".format(filename))
+        sys.exit(f"\n\n\nInput file {filename} not recognized!\n")
 
 
 def create_browser_output(fig, outfile, window):

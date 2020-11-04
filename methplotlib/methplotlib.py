@@ -66,26 +66,15 @@ def meth_browser(meth_data, window, gtf=False, bed=False, simplify=False,
             if sample_type == 'nanopolish_freq':
                 fig["layout"]["yaxis{}".format(y)].update(title="Modified <br> frequency")
                 fig["layout"].update(showlegend=False)
-                fig["layout"]["xaxis"].update(tickformat='g',
-                                              separatethousands=True,
-                                              range=[window.begin, window.end])
                 fig["layout"].update(legend=dict(orientation='h'))
             elif sample_type in ['nanopolish_call', 'nanopolish_phased']:
                 fig["layout"]["yaxis{}".format(y)].update(title="Reads")
                 fig["layout"].update(showlegend=False)
-                fig["layout"]["xaxis"].update(tickformat='g',
-                                              separatethousands=True,
-                                              range=[window.begin, window.end])
             elif sample_type == 'nanocompore':
                 fig["layout"]["yaxis{}".format(y)].update(title="-log10(pval)")
-                fig["layout"]["xaxis"].update(tickformat='g',
-                                              range=[window.begin, window.end])
                 fig["layout"].update(legend=dict(orientation='h'))
             elif sample_type == 'ont-cram':
                 fig["layout"]["yaxis{}".format(y)].update(title="Reads")
-                fig["layout"]["xaxis"].update(tickformat='g',
-                                              separatethousands=True,
-                                              range=[window.begin, window.end])
             else:
                 sys.exit(f"ERROR: unrecognized data type {sample_type}")
     else:
@@ -98,10 +87,8 @@ def meth_browser(meth_data, window, gtf=False, bed=False, simplify=False,
             fig.append_trace(trace=meth_trace[0], row=1, col=1)
         fig["layout"].update(legend=dict(orientation='h'))
         fig["layout"]['yaxis'].update(title="Modified <br> frequency")
-        fig["layout"]["xaxis"].update(tickformat='g',
-                                      separatethousands=True,
-                                      range=[window.begin, window.end])
     logging.info("Prepared modification plots.")
+
     if bed:
         for annot_trace in plots.bed_annotation(bed, window):
             fig.append_trace(trace=annot_trace, row=annot_row, col=1)
@@ -118,6 +105,9 @@ def meth_browser(meth_data, window, gtf=False, bed=False, simplify=False,
                                          ticks='',
                                          showticklabels=False)
         logging.info("Prepared annotation plots.")
+    fig["layout"]["xaxis"].update(tickformat='g',
+                                  separatethousands=True,
+                                  range=[window.begin, window.end])
     fig["layout"].update(barmode='overlay',
                          title="Nucleotide modifications",
                          hovermode='closest',

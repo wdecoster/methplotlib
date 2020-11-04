@@ -25,7 +25,7 @@ def read_meth(filename, name, window, smoothen=5):
     which will return a dataframe with 'read', 'chromosome', 'pos', 'log_lik_ratio', 'strand'
     """
     file_type = file_sniffer(filename)
-    logging.info("File is of type {}".format(file_type))
+    logging.info(f"File {filename} is of type {file_type}")
     try:
         if file_type.startswith("nanopolish"):
             return parse_nanopolish(filename, file_type, name, window, smoothen=smoothen)
@@ -47,9 +47,8 @@ def parse_nanopolish(filename, file_type, name, window, smoothen=5):
         if Path(filename + '.tbi').is_file():
             import subprocess
             import gzip
-            logging.info("Reading {} using a tabix stream.".format(filename))
-
-            region = "{}:{}-{}".format(window.chromosome, window.begin, window.end)
+            logging.info(f"Reading {filename} using a tabix stream.")
+            region = f"{window.chromosome}:{window.begin}-{window.end}"
             try:
                 tabix_stream = subprocess.Popen(['tabix', filename, region],
                                                 stdout=subprocess.PIPE,
@@ -63,7 +62,7 @@ def parse_nanopolish(filename, file_type, name, window, smoothen=5):
             header = gzip.open(filename, 'rt').readline().rstrip().split('\t')
             table = pd.read_csv(tabix_stream.stdout, sep='\t', header=None, names=header)
         else:
-            logging.info("Reading {} by splitting the file in chunks.".format(filename))
+            logging.info(f"Reading {filename} slowly by splitting the file in chunks.")
             sys.stderr.write("\nReading {} would be faster with bgzip and tabix.\n")
             sys.stderr.write("Please index with 'tabix -b3 -s1 -S1 -e4.\n'")
             iter_csv = pd.read_csv(filename, sep="\t", iterator=True, chunksize=1e6)
@@ -80,7 +79,7 @@ def parse_nanopolish(filename, file_type, name, window, smoothen=5):
     try:
         gr.pos = np.floor(gr.drop().df[["Start", "End"]].mean(axis=1))
     except KeyError:
-        sys.stderr.write("\n\n\nProblem parsing nanopolish file {}!\n".format(filename))
+        sys.stderr.write(f"\n\n\nProblem parsing nanopolish file {filename}!\n")
         sys.stderr.write("Could it be that there are no calls in your selected window?\n")
         sys.stderr.write("\n\n\nDetailed error:\n")
         raise

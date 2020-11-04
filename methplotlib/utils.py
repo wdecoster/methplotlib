@@ -182,6 +182,37 @@ def file_sniffer(filename):
         sys.exit(f"\n\n\nInput file {filename} not recognized!\n")
 
 
+def create_subplots(num_methrows, split, names=None, annotation=True):
+    '''
+    Prepare the panels (rows * 1 column) for the subplots.
+    If splitting: one row for each dataset, taking 90%/len(datasets) for heights
+    If not: one row spanning 4 rows and taking 90% of the heights
+    if annotation is True (bed or gtf) then add a row with height 10%
+    '''
+    if split:
+        return plotly.subplots.make_subplots(
+            rows=num_methrows + annotation,
+            cols=1,
+            shared_xaxes=True,
+            specs=[[{}] for i in range(num_methrows + annotation)],
+            print_grid=False,
+            subplot_titles=names,
+            vertical_spacing=0.1,
+            row_heights=[0.9 / num_methrows] * num_methrows + [0.1] * annotation
+
+        )
+    else:
+        return plotly.subplots.make_subplots(
+            rows=num_methrows + annotation,
+            cols=1,
+            shared_xaxes=True,
+            specs=[[{'rowspan': num_methrows}], [None], [None], [None]] + [[{}]] * annotation,
+            print_grid=False,
+            vertical_spacing=0.1,
+            row_heights=[0.9, 0, 0, 0] + [0.1] * annotation
+        )
+
+
 def create_browser_output(fig, outfile, window):
     if outfile is None:
         outfile = "methylation_browser_{}.html".format(window.string)

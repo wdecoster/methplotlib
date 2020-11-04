@@ -64,7 +64,10 @@ def parse_nanopolish(filename, file_type, name, window, smoothen=5):
         else:
             logging.info(f"Reading {filename} slowly by splitting the file in chunks.")
             sys.stderr.write(f"\nReading {filename} would be faster with bgzip and tabix.\n")
-            sys.stderr.write("Please index with 'tabix -b3 -s1 -S1 -e4'.\n")
+            if file_type in ['nanopolish_call', 'nanopolish_phased']:
+                sys.stderr.write("Please index with 'tabix -S1 -s1 -b3 -e4'.\n")
+            else:
+                sys.stderr.write("Please index with 'tabix -S1 -s1 -b2 -e3'.\n")
             iter_csv = pd.read_csv(filename, sep="\t", iterator=True, chunksize=1e6)
             table = pd.concat([chunk[chunk['chromosome'] == window.chromosome]
                                for chunk in iter_csv])

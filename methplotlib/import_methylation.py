@@ -177,8 +177,9 @@ def parse_bedgraph(filename, name, window):
             logging.info(f"Reading {filename} slowly by splitting the file in chunks.")
             sys.stderr.write(
                 f"\nReading {filename} would be faster with bgzip and 'tabix -p bed'.\n")
-            iter_csv = pd.read_csv(filename, sep="\t", iterator=True, chunksize=1e6)
-            table = pd.concat([chunk[chunk['chromosome'] == window.chromosome]
+            iter_csv = pd.read_csv(filename, sep="\t", iterator=True, chunksize=1e6, header=None,
+                                   names=['Chromosome', 'Start', 'End', 'Value'])
+            table = pd.concat([chunk[chunk['Chromosome'] == window.chromosome]
                                for chunk in iter_csv])
     else:
         table = pd.read_csv(filename, sep="\t", header=None,

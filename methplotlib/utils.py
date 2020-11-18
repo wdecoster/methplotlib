@@ -54,7 +54,7 @@ def get_args():
                         version=f'methplotlib {__version__}')
     parser.add_argument("-m", "--methylation",
                         nargs='+',
-                        help="methylation data in nanopolish, nanocompore or ont-cram format",
+                        help="data in nanopolish, nanocompore, ont-cram or bedgraph format",
                         required=True if "--example" not in sys.argv else False)
     parser.add_argument("-n", "--names",
                         nargs='+',
@@ -64,9 +64,9 @@ def get_args():
                         help="window (region) to which the visualisation has to be restricted",
                         required=True if "--example" not in sys.argv else False)
     parser.add_argument("-g", "--gtf",
-                        help="add annotation based on a gtf file matching to your reference genome")
+                        help="add annotation based on a gtf file")
     parser.add_argument("-b", "--bed",
-                        help="add annotation based on a bed file matching to your reference genome")
+                        help="add annotation based on a bed file")
     parser.add_argument("-f", "--fasta",
                         help="required when --window is an entire chromosome, contig or transcript")
     parser.add_argument("--simplify",
@@ -78,7 +78,7 @@ def get_args():
     parser.add_argument("--static",
                         help="Make a static image of the browser window")
     parser.add_argument("--smooth",
-                        help="When plotting frequencies points are averaged using a rolling window",
+                        help="Rolling window size for averaging frequency values",
                         type=int,
                         default=5)
     parser.add_argument("--dotsize",

@@ -34,10 +34,8 @@ optional arguments:
   -w, --window WINDOW   window (region) to which the visualisation has to be restricted
   -g, --gtf GTF         add annotation based on a gtf file
   -b, --bed BED         add annotation based on a bed file
-  -f, --fasta FASTA     required when --window is an entire chromosome, contig
-                        or transcript
-  --simplify            simplify annotation track to show genes rather than
-                        transcripts
+  -f, --fasta FASTA     required when --window is an entire chromosome, contig or transcript
+  --simplify            simplify annotation track to show genes rather than transcripts
   --split               split, rather than overlay the methylation tracks
   --static              Make a static image of the browser window (filename)
   --smooth              Rolling window size for averaging frequency values (int)

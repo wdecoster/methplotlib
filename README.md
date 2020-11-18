@@ -6,9 +6,10 @@
 # METHPLOTLIB
 
 This script generates a browser view on a window using data from  
-i) [nanopolish](https://github.com/jts/nanopolish), either as methylation calls or methylation frequencies (as processed by calculate_methylation_frequency.py)  
+i) [nanopolish](https://github.com/jts/nanopolish), either as methylation calls or methylation frequencies (as processed by calculate_methylation_frequency.py). The methylation calls can additionally be phased using scripts/annotate_calls_by_phase.and scripts/split_calls_by_phase.py
 ii) [nanocompore](https://github.com/tleonardi/nanocompore)  
 iii) in ont-cram format with MM/MP tags according to the SAM specifications and converted using e.g. [this script](https://github.com/kpalin/gcf52ref/blob/f5_to_usam/scripts/extract_methylation_fast5_to_sam.py)
+iii) in bedgraph format
 
 ## INSTALLATION
 `pip install methplotlib`
@@ -16,36 +17,41 @@ iii) in ont-cram format with MM/MP tags according to the SAM specifications and 
 ## USAGE
 ```
 methplotlib [-h] [-v] -m METHYLATION [METHYLATION ...] -n NAMES
-               [NAMES ...] -w WINDOW [-g GTF] [-b BED] [--simplify]
-               [--split] [--smooth SMOOTH]
+                   [NAMES ...] -w WINDOW [-g GTF] [-b BED] [-f FASTA]
+                   [--simplify] [--split] [--static STATIC] [--smooth SMOOTH]
+                   [--dotsize DOTSIZE] [--example] [-o OUTFILE] [-q QCFILE]
 
-Arguments:
+plotting nanopolish methylation calls or frequency
+
+optional arguments:
   -h, --help            show this help message and exit
   -v, --version         Print version and exit.
-  -example             Show example command and exit.
-
   -m, --methylation METHYLATION [METHYLATION ...]
-                        methylation data in nanopolish, nanocompore or ont-cram format
+                        data in nanopolish, nanocompore, ont-cram or bedgraph
+                        format
   -n, --names NAMES [NAMES ...]
                         names of datasets in --methylation
   -w, --window WINDOW   window (region) to which the visualisation has to be restricted
   -g, --gtf GTF         add annotation based on a gtf file
-  -b, --bed BED         add annotation based on a bed file matching to your reference genome
-  -f, --fasta FASTA     required when --window is an entire chromosome, contig or transcript
-
-  --simplify            simplify annotation track to show genes rather than transcripts
-  --split               split, rather than overlay the methylation frequency tracks
-  --smooth SMOOTH       Smoothen the datapoints of frequencies, but reduce the details (integer, default=5)
-  --dotsize DOTSIZE     Control the size of dots in the per read plots
-  -o, --outfile OUTFILE File to write results to. Default: methylation_browser_{chr}_{start}_{end}.html.
-                        Use {region} as a shorthand for {chr}_{start}_{end} in the filename.
-                        Missing paths will be created.
-  -q, --qcfile QCFILE   File to write the qc report to. Default: The path in outfile prefixed with qc_,
-                        default is qc_report_methylation_browser_{chr}_{start}_{end}.html.
-                        Use {region} as a shorthand for {chr}_{start}_{end} in the filename.
-                        Missing paths will be created.
-
-
+  -b, --bed BED         add annotation based on a bed file
+  -f, --fasta FASTA     required when --window is an entire chromosome, contig
+                        or transcript
+  --simplify            simplify annotation track to show genes rather than
+                        transcripts
+  --split               split, rather than overlay the methylation tracks
+  --static              Make a static image of the browser window (filename)
+  --smooth              Rolling window size for averaging frequency values (int)
+  --dotsize             Control the size of dots in the per read plots (int)
+  --example             Show example command and exit.
+  -o, --outfile OUTFILE File to write results to. Default:
+                        methylation_browser_{chr}_{start}_{end}.html. Use
+                        {region} as a shorthand for {chr}_{start}_{end} in the
+                        filename. Missing paths will be created.
+  -q, --qcfile QCFILE   File to write the qc report to. Default: The path in
+                        outfile prefixed with qc_, default is qc_report_methyl
+                        ation_browser_{chr}_{start}_{end}.html. Use {region}
+                        as a shorthand for {chr}_{start}_{end} in the
+                        filename. Missing paths will be created.
 
 ```
 

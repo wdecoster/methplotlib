@@ -38,6 +38,7 @@ optional arguments:
   --simplify            simplify annotation track to show genes rather than transcripts
   --split               split, rather than overlay the methylation tracks
   --static              Make a static image of the browser window (filename)
+  --binary              Make the nanopolish plot ignorning log likelihood nuances
   --smooth              Rolling window size for averaging frequency values (int)
   --dotsize             Control the size of dots in the per read plots (int)
   --example             Show example command and exit.

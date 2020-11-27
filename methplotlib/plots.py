@@ -89,7 +89,7 @@ def bed_annotation(bed, window):
             for (begin, end, name) in parse_bed(bed, window)]
 
 
-def methylation(meth_data, dotsize=4):
+def methylation(meth_data, dotsize=4, binary=False):
     """
     Plot methylation traces from various data types
     """
@@ -102,7 +102,8 @@ def methylation(meth_data, dotsize=4):
             traces.append(
                 make_per_read_meth_traces_llr(table=meth.table,
                                               phased=meth.data_type == 'nanopolish_phased',
-                                              dotsize=dotsize)
+                                              dotsize=dotsize,
+                                              binary=binary)
             )
             split = True
         elif meth.data_type == 'nanocompore':
@@ -166,12 +167,15 @@ def make_per_read_meth_traces_phred(table, max_cov=100, dotsize=4):
     return traces
 
 
-def make_per_read_meth_traces_llr(table, phased=False, max_cov=100, dotsize=4):
+def make_per_read_meth_traces_llr(table, phased=False, max_cov=100, dotsize=4, binary=False):
     """Make traces for each read"""
     minmax_table = find_min_and_max_pos_per_read(table, phased=phased)
     df_heights = assign_y_height_per_read(minmax_table, phased=phased, max_coverage=max_cov)
     table = table.join(df_heights, on="read_name")
-    table.loc[:, "llr_scaled"] = rescale_log_likelihood_ratio(table["log_lik_ratio"].copy())
+    if binary:
+        table.loc[:, "llr_scaled"] = binarize_log_likelihood_ratio(table["log_lik_ratio"].copy())
+    else:
+        table.loc[:, "llr_scaled"] = rescale_log_likelihood_ratio(table["log_lik_ratio"].copy())
     traces = []
     hidden = 0
     for read in table["read_name"].unique():
@@ -259,6 +263,19 @@ def rescale_log_likelihood_ratio(llr):
     llr[llr > 0] = scaler.fit_transform(llr[llr > 0].values.reshape(-1, 1)).tolist()
     scaler = MinMaxScaler(feature_range=(-1, 0))
     llr[llr < 0] = scaler.fit_transform(llr[llr < 0].values.reshape(-1, 1)).tolist()
+    return llr
+
+
+def binarize_log_likelihood_ratio(llr, cutoff=2):
+    '''
+    Converts the log likelihood to sorta binary representation,
+    with 0 being insufficient evidence (based on cutoff)
+    and +1 being probably methylated
+    and -1 being probably unmethylated
+    '''
+    llr[(-cutoff < llr) & (llr < cutoff)] = 0
+    llr[llr > cutoff] = 1
+    llr[llr < -cutoff] = -1
     return llr
 
 

@@ -77,6 +77,9 @@ def get_args():
                         action="store_true")
     parser.add_argument("--static",
                         help="Make a static image of the browser window")
+    parser.add_argument("--binary",
+                        help="Make the nanopolish plot ignorning log likelihood nuances",
+                        action="store_true")
     parser.add_argument("--smooth",
                         help="Rolling window size for averaging frequency values",
                         type=int,

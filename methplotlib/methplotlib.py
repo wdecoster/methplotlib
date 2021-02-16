@@ -65,7 +65,7 @@ def meth_browser(meth_data, window, gtf=False, bed=False, simplify=False,
             for meth_trace in sample_traces:
                 fig.append_trace(trace=meth_trace, row=y, col=1)
             if sample_type == 'nanopolish_freq':
-                fig["layout"][f"yaxis{y}"].update(title="Modified <br> frequency")
+                fig["layout"][f"yaxis{y}"].update(title="Modified <br> frequency", range=[0, 1])
                 fig["layout"].update(showlegend=False)
                 fig["layout"].update(legend=dict(orientation='h'))
             elif sample_type in ['nanopolish_call', 'nanopolish_phased']:
@@ -91,7 +91,7 @@ def meth_browser(meth_data, window, gtf=False, bed=False, simplify=False,
                 fig.append_trace(trace=trace, row=1, col=1)
         fig["layout"].update(legend=dict(orientation='h'))
         if meth_traces.types[0] == 'nanopolish_freq':
-            fig["layout"]['yaxis'].update(title="Modified <br> frequency")
+            fig["layout"]['yaxis'].update(title="Modified <br> frequency", range=[0, 1])
         elif meth_traces.types[0] == 'bedgraph':
             fig["layout"]["yaxis"].update(title="Value")
         else:

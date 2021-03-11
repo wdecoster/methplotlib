@@ -32,7 +32,7 @@ setup(
     packages=find_packages(),
     python_requires='>=3',
     install_requires=['plotly>=4.9.0',
-                      'numpy>=1.14.3',
+                      'numpy>=1.16.5',
                       'pandas>=0.23.4',
                       'pyranges>=0.0.77',
                       'fisher>=0.1.9',

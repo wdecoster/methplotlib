@@ -101,7 +101,8 @@ def parse_nanopolish(filename, file_type, name, window, smoothen=5):
         gr.pos = np.floor(gr.drop().df[["Start", "End"]].mean(axis=1))
     except KeyError:
         sys.stderr.write(f"\n\n\nProblem parsing nanopolish file {filename}!\n")
-        sys.stderr.write("Could it be that there are no calls in your selected window?\n")
+        sys.stderr.write("Could it be that there are no calls in your selected window "
+                         f"{window.chromosome}:{window.begin}-{window.end}?\n")
         sys.stderr.write("\n\n\nDetailed error:\n")
         raise
 

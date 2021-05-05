@@ -14,6 +14,11 @@ class Region(object):
         if ':' in region:
             try:
                 self.chromosome, interval = region.replace(',', '').split(':')
+                try:
+                    # see if just integer chromosomes are used
+                    self.chromosome = int(self.chromosome)
+                except ValueError:
+                    pass
                 self.begin, self.end = [int(i) for i in interval.split('-')]
             except ValueError:
                 sys.exit("\n\nERROR: Window (-w/--window) inproperly formatted, "

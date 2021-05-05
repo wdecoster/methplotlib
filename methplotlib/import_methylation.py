@@ -96,7 +96,7 @@ def parse_nanopolish(filename, file_type, name, window, smoothen=5):
     logging.info("Read the file in a dataframe.")
 
     if window:
-        gr = gr[window.chromosome, window.begin:window.end]
+        gr = gr[str(window.chromosome), window.begin:window.end]
     try:
         gr.pos = np.floor(gr.drop().df[["Start", "End"]].mean(axis=1))
     except KeyError:

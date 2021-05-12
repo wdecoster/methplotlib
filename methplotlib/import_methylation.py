@@ -3,7 +3,7 @@ import pyranges as pr
 import numpy as np
 import sys
 import logging
-from methplotlib.utils import file_sniffer
+from methplotlib.utils import file_sniffer, flatten
 
 
 class Modification(object):
@@ -28,10 +28,10 @@ def get_data(methylation_files, names, window, smoothen=5):
     data is extracted within the window args.window
     Frequencies are smoothened using a sliding window
     """
-    return [read_meth(f, n, window, smoothen) for f, n in zip(methylation_files, names)]
+    return flatten([read_mods(f, n, window, smoothen) for f, n in zip(methylation_files, names)])
 
 
-def read_meth(filename, name, window, smoothen=5):
+def read_mods(filename, name, window, smoothen=5):
     """
     converts a file from nanopolish to a pandas dataframe
     input can be from calculate_methylation_frequency
@@ -45,13 +45,13 @@ def read_meth(filename, name, window, smoothen=5):
     logging.info(f"File {filename} is of type {file_type}")
     try:
         if file_type.startswith("nanopolish"):
-            return parse_nanopolish(filename, file_type, name, window, smoothen=smoothen)
+            return [parse_nanopolish(filename, file_type, name, window, smoothen=smoothen)]
         elif file_type == "nanocompore":
-            return parse_nanocompore(filename, name, window)
+            return [parse_nanocompore(filename, name, window)]
         elif file_type in ["cram", "bam"]:
             return parse_cram(filename, file_type, name, window)
         elif file_type == 'bedgraph':
-            return parse_bedgraph(filename, name, window)
+            return [parse_bedgraph(filename, name, window)]
     except Exception as e:
         logging.error(f"Error processing {filename}.")
         logging.error(e, exc_info=True)
@@ -114,7 +114,7 @@ def parse_nanopolish(filename, file_type, name, window, smoothen=5):
         table = table.drop(columns=['Start', 'End', 'log_lik_methylated',
                                     'log_lik_unmethylated', 'num_calling_strands',
                                     'num_motifs', 'sequence'])
-        return Methylation(
+        return Modification(
             table=table.sort_values(['read_name', 'pos']),
             data_type=file_type,
             name=name,
@@ -124,7 +124,7 @@ def parse_nanopolish(filename, file_type, name, window, smoothen=5):
         table = table.drop(columns=['Start', 'End', 'num_motifs_in_group',
                                     'called_sites', 'called_sites_methylated',
                                     'group_sequence'])
-        return Methylation(
+        return Modification(
             table=table.sort_values('pos')
                        .groupby('pos')
                        .mean()
@@ -146,7 +146,7 @@ def parse_nanocompore(filename, name, window):
     table = pd.read_csv(filename, sep="\t", usecols=nanocompore_columns_of_interest)
     if window:
         table = table[table["ref_id"] == window.chromosome]
-    return Methylation(
+    return Modification(
         table=table.sort_values('pos')
                    .append({'pos': window.end}, ignore_index=True)
                    .drop(columns="ref_id")
@@ -192,7 +192,7 @@ def parse_bedgraph(filename, name, window):
         gr = gr[window.chromosome, window.begin:window.end]
         if len(gr.df) == 0:
             sys.exit(f"No records for {filename} in {window.string}!\n")
-    return Methylation(
+    return Modification(
         table=gr.df.sort_values('Start'),
         data_type="bedgraph",
         name=name,

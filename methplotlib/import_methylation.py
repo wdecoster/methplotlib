@@ -238,8 +238,13 @@ def get_modified_reference_positions(read):
             if context:
                 basemod = context.split(',', 1)[0]
                 if '-' in basemod:
-                    sys.exit("ERROR: modifications on negative strand currently unsupported.")
+                    sys.exit("ERROR: modifications on negative strand currently unsupported.\n"
+                             "Please contact me if this would be of interest for you.")
                 base, mod = basemod.split('+')
+                # code below does not work with for ambiguous N and will search for a literal N
+                if base == 'N':
+                    sys.exit("ERROR: modifications of N nucleotides currently unsupported.\n"
+                             "Please contact me if this would be of interest for you.")
                 # The positions are encoded by specifying the number of non-modified occurences
                 # of that specific bases to skip in the read sequence
                 deltas = [int(i) for i in context.split(',')[1:]]

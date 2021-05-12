@@ -6,7 +6,7 @@ import logging
 from methplotlib.utils import file_sniffer
 
 
-class Methylation(object):
+class Modification(object):
     def __init__(self, table, data_type, name, called_sites):
         self.table = table
         self.data_type = data_type

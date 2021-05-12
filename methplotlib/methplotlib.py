@@ -33,12 +33,13 @@ def main():
                      dotsize=args.dotsize,
                      static=args.static,
                      binary=args.binary,
+                     minqual=args.minqual,  # only for input in bam/cram format
                      )
     logging.info("Finished!")
 
 
 def meth_browser(meth_data, window, gtf=False, bed=False, simplify=False,
-                 split=False, outfile=None, dotsize=4, static=False, binary=False):
+                 split=False, outfile=None, dotsize=4, static=False, binary=False, minqual=20):
     """
     meth_Data is a list of Methylation objects from the import_methylation submodule
     annotation is optional and is a gtf or bed file
@@ -49,7 +50,7 @@ def meth_browser(meth_data, window, gtf=False, bed=False, simplify=False,
      then 4/5 of the browser is used for overlayed samples and one for gtf annotation
     the trace to be used for annotation is thus always num_methrows + 1
     """
-    meth_traces = plots.methylation(meth_data, dotsize=dotsize, binary=binary)
+    meth_traces = plots.methylation(meth_data, dotsize=dotsize, binary=binary, minqual=minqual)
     logging.info("Prepared methylation traces.")
     if split or meth_traces.split:
         num_methrows = len(meth_data)

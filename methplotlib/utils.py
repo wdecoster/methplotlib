@@ -98,6 +98,10 @@ def get_args():
                         help="Control the size of dots in the per read plots",
                         type=int,
                         default=4)
+    parser.add_argument("--minqual",
+                        help="The minimal phred quality to show [for bam/cram input only]",
+                        type=int,
+                        default=20)
     parser.add_argument("--example",
                         action="store_true",
                         help="Show example command and exit.")

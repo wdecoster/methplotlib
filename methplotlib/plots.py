@@ -89,7 +89,7 @@ def bed_annotation(bed, window):
             for (begin, end, name) in parse_bed(bed, window)]
 
 
-def methylation(meth_data, dotsize=4, binary=False):
+def methylation(meth_data, dotsize=4, binary=False, minqual=20):
     """
     Plot methylation traces from various data types
     """
@@ -119,7 +119,8 @@ def methylation(meth_data, dotsize=4, binary=False):
             traces.append(
                 make_per_read_meth_traces_phred(table=meth.table,
                                                 minmax_table=meth.start_end_table,
-                                                dotsize=dotsize)
+                                                dotsize=dotsize,
+                                                minqual=minqual)
             )
             split = True
         elif meth.data_type == 'bedgraph':
@@ -142,7 +143,7 @@ def methylation(meth_data, dotsize=4, binary=False):
                       split=split)
 
 
-def make_per_read_meth_traces_phred(table, minmax_table, max_cov=100, dotsize=4):
+def make_per_read_meth_traces_phred(table, minmax_table, max_cov=100, dotsize=4, minqual=20):
     """Make traces for each read"""
     df_heights = assign_y_height_per_read(minmax_table, max_coverage=max_cov)
     table = table.join(df_heights, on="read_name")
@@ -162,7 +163,8 @@ def make_per_read_meth_traces_phred(table, minmax_table, max_cov=100, dotsize=4)
     if hidden:
         sys.stderr.write(f"Warning: hiding {hidden} reads because coverage above {max_cov}x.\n")
     traces.append(
-        make_per_position_phred_scatter(read_table=table, dotsize=dotsize)
+        make_per_position_phred_scatter(read_table=table[table['quality'] > minqual],
+                                        dotsize=dotsize)
     )
     return traces
 

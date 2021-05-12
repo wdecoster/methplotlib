@@ -118,6 +118,7 @@ def methylation(meth_data, dotsize=4, binary=False):
         elif meth.data_type == 'ont-cram':
             traces.append(
                 make_per_read_meth_traces_phred(table=meth.table,
+                                                minmax_table=meth.start_end_table,
                                                 dotsize=dotsize)
             )
             split = True
@@ -141,9 +142,8 @@ def methylation(meth_data, dotsize=4, binary=False):
                       split=split)
 
 
-def make_per_read_meth_traces_phred(table, max_cov=100, dotsize=4):
+def make_per_read_meth_traces_phred(table, minmax_table, max_cov=100, dotsize=4):
     """Make traces for each read"""
-    minmax_table = find_min_and_max_pos_per_read(table)
     df_heights = assign_y_height_per_read(minmax_table, max_coverage=max_cov)
     table = table.join(df_heights, on="read_name")
     traces = []

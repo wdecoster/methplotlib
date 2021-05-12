@@ -7,6 +7,7 @@ from time import time
 import logging
 import plotly
 from pathlib import Path
+from itertools import chain
 
 
 class Region(object):
@@ -49,6 +50,10 @@ def make_windows(full_window, max_size=1e6, fasta=None):
             for i in range(chunks)]
     else:
         return [reg]
+
+
+def flatten(nested_list):
+    return list(chain.from_iterable(nested_list))
 
 
 def get_args():

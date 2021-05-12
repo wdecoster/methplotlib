@@ -268,11 +268,12 @@ def get_modified_reference_positions(read):
                 offset = len(deltas)
 
             mod_positions.extend(
-                zip(repeat(read.query_name),
-                    repeat('-' if read.is_reverse else '+'),
-                    refpos[modified_bases],
-                    likelihoods,
-                    repeat(basemod)))
+                zip(repeat(read.query_name),  # read_name
+                    repeat('-' if read.is_reverse else '+'),  # strand
+                    refpos[modified_bases],  # pos
+                    likelihoods,  # quality
+                    repeat(basemod)  # mod
+                    ))
         return mod_positions
     else:
         return None

@@ -21,6 +21,7 @@ def get_data(methylation_files, names, window, smoothen=5):
     Data can in various formats
     - nanopolish raw, phased, frequency
     - cram
+    - bam
     - nanocompore
     - bedgraph
 
@@ -47,8 +48,8 @@ def read_meth(filename, name, window, smoothen=5):
             return parse_nanopolish(filename, file_type, name, window, smoothen=smoothen)
         elif file_type == "nanocompore":
             return parse_nanocompore(filename, name, window)
-        elif file_type == "ont-cram":
-            return parse_ont_cram(filename, name, window)
+        elif file_type in ["cram", "bam"]:
+            return parse_cram(filename, file_type, name, window)
         elif file_type == 'bedgraph':
             return parse_bedgraph(filename, name, window)
     except Exception as e:
@@ -198,9 +199,10 @@ def parse_bedgraph(filename, name, window):
         called_sites=len(table))
 
 
-def parse_ont_cram(filename, name, window):
+def parse_cram(filename, filetype, name, window):
     import pysam
-    cram = pysam.AlignmentFile(filename, "rc")
+    mode = 'rc' if filetype == 'cram' else 'rb'
+    cram = pysam.AlignmentFile(filename, mode)
     data = []
     for read in cram.fetch(reference=window.chromosome, start=window.begin, end=window.end):
         if not read.is_supplementary and not read.is_secondary:

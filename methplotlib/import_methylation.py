@@ -8,11 +8,12 @@ from itertools import repeat
 
 
 class Modification(object):
-    def __init__(self, table, data_type, name, called_sites):
+    def __init__(self, table, data_type, name, called_sites, start_end_table=None):
         self.table = table
         self.data_type = data_type
         self.name = name
         self.called_sites = called_sites
+        self.start_end_table = start_end_table
 
 
 def get_data(methylation_files, names, window, smoothen=5):
@@ -205,19 +206,25 @@ def parse_cram(filename, filetype, name, window):
     mode = 'rc' if filetype == 'cram' else 'rb'
     cram = pysam.AlignmentFile(filename, mode)
     data = []
+    start_stops = []
     for read in cram.fetch(reference=window.chromosome, start=window.begin, end=window.end):
         if not read.is_supplementary and not read.is_secondary:
+            start_stops.append((read.query_name, read.reference_start, read.reference_end))
             mod_positions = get_modified_reference_positions(read)
             if mod_positions[0] is not None:
                 data.extend(mod_positions)
     df = pd.DataFrame(data, columns=['read_name', 'strand', 'pos', 'quality', 'mod']) \
-           .astype(dtype={'mod': 'category', 'quality': 'float'}) \
-           .sort_values(['read_name', 'pos'])
+        .astype(dtype={'mod': 'category', 'quality': 'float'}) \
+        .sort_values(['read_name', 'pos'])
 
     return [Modification(table=sub_df,
                          data_type="ont-cram",
                          name=f"{name}_{mod}",
-                         called_sites=len(sub_df))
+                         called_sites=len(sub_df),
+                         start_end_table=pd.DataFrame(start_stops,
+                                                      columns=['read_name', 'posmin', 'posmax'])
+                         .set_index('read_name')
+                         )
             for mod, sub_df in df.groupby('mod')]
 
 

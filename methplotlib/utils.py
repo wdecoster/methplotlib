@@ -167,6 +167,15 @@ def is_cram_file(filepath):
         return test_f.read(4) == b'CRAM'
 
 
+def is_bam_file(filepath):
+    import gzip
+    try:
+        with gzip.open(filepath) as test_f:
+            return test_f.read(3) == b'BAM'
+    except OSError:
+        return False
+
+
 def file_sniffer(filename):
     """
     Takes in a filename and tries to guess the input file type
@@ -174,7 +183,9 @@ def file_sniffer(filename):
     if not Path(filename).is_file():
         sys.exit(f"\n\nERROR: File {filename} does not exist, please check the path!\n")
     if is_cram_file(filename):
-        return "ont-cram"
+        return "cram"
+    if is_bam_file(filename):
+        return "bam"
     if is_gz_file(filename):
         import gzip
         header = gzip.open(filename, 'rt').readline()

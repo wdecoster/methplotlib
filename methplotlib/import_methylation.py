@@ -4,6 +4,7 @@ import numpy as np
 import sys
 import logging
 from methplotlib.utils import file_sniffer, flatten
+from itertools import repeat
 
 
 class Modification(object):
@@ -206,45 +207,68 @@ def parse_cram(filename, filetype, name, window):
     data = []
     for read in cram.fetch(reference=window.chromosome, start=window.begin, end=window.end):
         if not read.is_supplementary and not read.is_secondary:
-            mod, positions, quals = get_modified_reference_positions(read)
-            for pos, qual in zip(positions, quals):
-                if pos is not None:
-                    data.append((read.query_name,
-                                 '-' if read.is_reverse else '+',
-                                 pos,
-                                 qual,
-                                 mod))
-    return Methylation(
-        table=pd.DataFrame(data, columns=['read_name', 'strand', 'pos', 'quality', 'mod'])
-                .astype(dtype={'mod': 'category', 'quality': 'float'})
-                .sort_values(['read_name', 'pos']),
-        data_type="ont-cram",
-        name=name,
-        called_sites=len(data))
+            mod_positions = get_modified_reference_positions(read)
+            if mod_positions[0] is not None:
+                data.extend(mod_positions)
+    df = pd.DataFrame(data, columns=['read_name', 'strand', 'pos', 'quality', 'mod']) \
+           .astype(dtype={'mod': 'category', 'quality': 'float'}) \
+           .sort_values(['read_name', 'pos'])
+
+    return [Modification(table=sub_df,
+                         data_type="ont-cram",
+                         name=f"{name}_{mod}",
+                         called_sites=len(sub_df))
+            for mod, sub_df in df.groupby('mod')]
 
 
 def get_modified_reference_positions(read):
-    if read.has_tag('MM'):
-        basemod = read.get_tag('MM').split(',', 1)[0]
-        if '-' in basemod:
-            sys.exit("ERROR: modifications on negative strand currently unsupported.")
-        base, mod = basemod.split('+')
-        deltas = [int(i) for i in read.get_tag('MM').split(',')[1:]]
-        probabilities = phred_to_probability(read.get_tag('MP'))
-        locations = np.cumsum(deltas) + np.concatenate(
-            (np.zeros(shape=1),
-             np.ones(shape=len(deltas) - 1))).astype('int')
-        base_index = np.array(
-            [i for i, letter in enumerate(read.get_forward_sequence()) if letter == base]
-        )
-        modified_bases = base_index[locations]
-        refpos = np.array(read.get_reference_positions(full_length=True))
-        if read.is_reverse:
-            refpos = np.flipud(refpos)
-            probabilities = probabilities[::-1]
-        return (basemod, refpos[modified_bases], probabilities)
+    mod_positions = []
+    if read.has_tag('Mm') or read.has_tag('MM'):
+        modtag = 'Mm' if read.has_tag('Mm') else 'MM'
+        qualtag = 'Ml' if read.has_tag('Ml') else 'ML'
+        offset = 0
+        for context in read.get_tag(modtag).split(';'):
+            if context:
+                basemod = context.split(',', 1)[0]
+                if '-' in basemod:
+                    sys.exit("ERROR: modifications on negative strand currently unsupported.")
+                base, mod = basemod.split('+')
+                # The positions are encoded by specifying the number of non-modified occurences
+                # of that specific bases to skip in the read sequence
+                deltas = [int(i) for i in context.split(',')[1:]]
+                # Make an array with all positions for which a modification is reported
+                # In coordinates relative to occurences of the nucleotide in the read
+                locations = np.cumsum(deltas) + np.arange(len(deltas))
+                # Nake an array with all read positions for which that nucleotide exists in the read
+                # Oddly, get_forward_sequence() returns the sequence as it came from the sequencer
+                # This is the same direction as the Mm/Ml tags are specified in
+                base_index = np.array(
+                    [i for i, letter in enumerate(read.get_forward_sequence()) if letter == base]
+                )
+                # Based on both arrays, find those read coordinates that have a modification
+                modified_bases = base_index[locations]
+                # Convert the array of read coordinates to reference coordinates
+                # full_length=True will make sure the list is of the same length as the read
+                # by adding 'None' for softclipped nucleotides
+                refpos = np.array(read.get_reference_positions(full_length=True))
+                # read.get_reference_positions() returns incrementing coordinates
+                # regardless of strand, so reversing the order for reverse_stranded reads
+                if read.is_reverse:
+                    refpos = refpos[::-1]
+                # The likelihoods are in an array of length of all Mm/MM deltas,
+                # and are not separated by context/modified nucleotide type
+                likelihoods = read.get_tag(qualtag).tolist()[offset:offset+len(deltas)]
+                offset = len(deltas)
+
+            mod_positions.extend(
+                zip(repeat(read.query_name),
+                    repeat('-' if read.is_reverse else '+'),
+                    refpos[modified_bases],
+                    likelihoods,
+                    repeat(basemod)))
+        return mod_positions
     else:
-        return (None, [None], [None])
+        return None
 
 
 def errs_tab(n):

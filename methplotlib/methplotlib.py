@@ -69,13 +69,13 @@ def meth_browser(meth_data, window, gtf=False, bed=False, simplify=False,
                 fig["layout"].update(showlegend=False)
                 fig["layout"].update(legend=dict(orientation='h'))
             elif sample_type in ['nanopolish_call', 'nanopolish_phased']:
-                fig["layout"][f"yaxis{y}"].update(title="Reads")
+                fig["layout"][f"yaxis{y}"].update(title="Reads", tickformat=',d')
                 fig["layout"].update(showlegend=False)
             elif sample_type == 'nanocompore':
                 fig["layout"][f"yaxis{y}"].update(title="-log10(pval)")
                 fig["layout"].update(legend=dict(orientation='h'))
             elif sample_type == 'ont-cram':
-                fig["layout"][f"yaxis{y}"].update(title="Reads")
+                fig["layout"][f"yaxis{y}"].update(title="Reads", tickformat=',d')
             elif sample_type == 'bedgraph':
                 fig["layout"][f"yaxis{y}"].update(title="Value")
             else:

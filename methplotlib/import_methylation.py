@@ -270,7 +270,7 @@ def get_modified_reference_positions(read):
                 # The likelihoods are in an array of length of all Mm/MM deltas,
                 # and are not separated by context/modified nucleotide type
                 likelihoods = read.get_tag(qualtag).tolist()[offset:offset+len(deltas)]
-                offset = len(deltas)
+                offset += len(deltas)
 
             mod_positions.extend(
                 zip(repeat(read.query_name),  # read_name

@@ -211,7 +211,7 @@ def parse_cram(filename, filetype, name, window):
         if not read.is_supplementary and not read.is_secondary:
             start_stops.append((read.query_name, read.reference_start, read.reference_end))
             mod_positions = get_modified_reference_positions(read)
-            if mod_positions[0] is not None:
+            if mod_positions:
                 data.extend(mod_positions)
     df = pd.DataFrame(data, columns=['read_name', 'strand', 'pos', 'quality', 'mod']) \
         .astype(dtype={'mod': 'category', 'quality': 'float'}) \

@@ -207,7 +207,7 @@ def parse_cram(filename, filetype, name, window):
     cram = pysam.AlignmentFile(filename, mode)
     data = []
     start_stops = []
-    for read in cram.fetch(reference=window.chromosome, start=window.begin, end=window.end):
+    for read in cram.fetch(reference=str(window.chromosome), start=window.begin, end=window.end):
         if not read.is_supplementary and not read.is_secondary:
             start_stops.append((read.query_name, read.reference_start, read.reference_end))
             mod_positions = get_modified_reference_positions(read)

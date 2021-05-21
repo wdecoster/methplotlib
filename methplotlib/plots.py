@@ -6,6 +6,9 @@ import pandas as pd
 import numpy as np
 
 
+legend_made = False
+
+
 class DataTraces(object):
     def __init__(self, traces, types, names, split):
         self.traces = traces
@@ -339,23 +342,36 @@ def make_per_position_likelihood_scatter(read_table, maxval=0.75, dotsize=4):
 
 def make_per_position_phred_scatter(read_table, dotsize=4):
     """Make scatter plot per CpG per read"""
-    return go.Scatter(x=read_table['pos'],
-                      y=read_table['height'],
-                      mode='markers',
-                      showlegend=False,
-                      text=read_table['mod'],
-                      hoverinfo="text",
-                      marker=dict(size=dotsize,
-                                  color=read_table['quality'],
-                                  colorscale='Reds',
-                                  colorbar=dict(title="Modification probability",
-                                                titleside="right",
-                                                tickvals=[read_table['quality'].min(),
-                                                          read_table['quality'].max()],
-                                                ticktext=["Likely <br> unmodified",
-                                                          "Likely <br> modified"],
-                                                ticks="outside")
-                                  ))
+    global legend_made
+    if legend_made or read_table.dropna().empty:
+        return go.Scatter(x=read_table['pos'],
+                          y=read_table['height'],
+                          mode='markers',
+                          showlegend=False,
+                          text=read_table['mod'],
+                          hoverinfo="text",
+                          marker=dict(size=dotsize,
+                                      color=read_table['quality'],
+                                      colorscale='Reds'))
+    else:
+        legend_made = True
+        return go.Scatter(x=read_table['pos'],
+                          y=read_table['height'],
+                          mode='markers',
+                          showlegend=False,
+                          text=read_table['mod'],
+                          hoverinfo="text",
+                          marker=dict(size=dotsize,
+                                      color=read_table['quality'],
+                                      colorscale='Reds',
+                                      colorbar=dict(title="Modification probability",
+                                                    titleside="right",
+                                                    tickvals=[read_table['quality'].min(),
+                                                              read_table['quality'].max()],
+                                                    ticktext=["Likely <br> unmodified",
+                                                              "Likely <br> modified"],
+                                                    ticks="outside")
+                                      ))
 
 
 def plot_nanocompore(table, dotsize=4):

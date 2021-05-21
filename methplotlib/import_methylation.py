@@ -271,7 +271,10 @@ def get_modified_reference_positions(read):
                     refpos = refpos[::-1]
                 # The likelihoods are in an array of length of all Mm/MM deltas,
                 # and are not separated by context/modified nucleotide type
-                likelihoods = read.get_tag(qualtag).tolist()[offset:offset+len(deltas)]
+                if read.has_tag(qualtag):
+                    likelihoods = read.get_tag(qualtag).tolist()[offset:offset+len(deltas)]
+                else:
+                    likelihoods = [255] * len(deltas)
                 offset += len(deltas)
                 mod_positions.extend(
                     zip(repeat(read.query_name),  # read_name

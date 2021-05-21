@@ -248,6 +248,8 @@ def get_modified_reference_positions(read):
                 # The positions are encoded by specifying the number of non-modified occurences
                 # of that specific bases to skip in the read sequence
                 deltas = [int(i) for i in context.split(',')[1:]]
+                if not deltas:
+                    continue
                 # Make an array with all positions for which a modification is reported
                 # In coordinates relative to occurences of the nucleotide in the read
                 locations = np.cumsum(deltas) + np.arange(len(deltas))
@@ -271,14 +273,13 @@ def get_modified_reference_positions(read):
                 # and are not separated by context/modified nucleotide type
                 likelihoods = read.get_tag(qualtag).tolist()[offset:offset+len(deltas)]
                 offset += len(deltas)
-
-            mod_positions.extend(
-                zip(repeat(read.query_name),  # read_name
-                    repeat('-' if read.is_reverse else '+'),  # strand
-                    refpos[modified_bases],  # pos
-                    likelihoods,  # quality
-                    repeat(basemod)  # mod
-                    ))
+                mod_positions.extend(
+                    zip(repeat(read.query_name),  # read_name
+                        repeat('-' if read.is_reverse else '+'),  # strand
+                        refpos[modified_bases],  # pos
+                        likelihoods,  # quality
+                        repeat(basemod)  # mod
+                        ))
         return mod_positions
     else:
         return None

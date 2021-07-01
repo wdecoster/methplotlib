@@ -194,7 +194,8 @@ def make_per_read_meth_traces_llr(table, phased=False, max_cov=100, dotsize=4, b
                 make_per_read_line_trace(read_range=minmax_table.loc[read],
                                          y_pos=df_heights.loc[read, 'height'],
                                          strand=strand,
-                                         phase=phase)
+                                         phase=phase,
+                                         size=dotsize)
             )
         except KeyError:
             hidden += 1
@@ -284,7 +285,7 @@ def binarize_log_likelihood_ratio(llr, cutoff=2):
     return llr
 
 
-def make_per_read_line_trace(read_range, y_pos, strand, phase=None):
+def make_per_read_line_trace(read_range, y_pos, strand, phase=None, size=4):
     """Make a grey line trace for a single read,
     with black arrow symbols on the edges indicating strand"""
     symbol = "triangle-right" if strand == "+" else "triangle-left"
@@ -303,7 +304,7 @@ def make_per_read_line_trace(read_range, y_pos, strand, phase=None):
                       line=dict(width=1, color='lightgrey'),
                       showlegend=False,
                       marker=dict(symbol=symbol,
-                                  size=8,
+                                  size=size*2,
                                   color=color,
                                   line=dict(width=0.5,
                                             color='black')))

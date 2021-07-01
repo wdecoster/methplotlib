@@ -8,4 +8,5 @@ def methylation_pyranges_from_csv(inputfile):
                                 sep="\t",
                                 names=colnames,
                                 header=0,
-                                usecols=[0, 1, 2, 4, 5]))
+                                usecols=[0, 1, 2, 4, 5]),
+                    int64=True)

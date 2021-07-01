@@ -24,7 +24,8 @@ if __name__ == '__main__':
     gr = methylation_pyranges_from_csv(args.methylation[0])
     gr2 = methylation_pyranges_from_csv(args.methylation[1])
 
-    bed = pr.read_bed(args.bed).merge()
+    df = pr.read_bed(args.bed, as_df=True)
+    bed = pr.PyRanges(df, int64=True).merge()
     result = main(gr, gr2, bed)
 
     result = result[result.FDR <= args.cutoff]

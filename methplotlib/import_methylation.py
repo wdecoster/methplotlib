@@ -47,7 +47,7 @@ def read_mods(filename, name, window, smoothen=5):
     logging.info(f"File {filename} is of type {file_type}")
     try:
         if file_type.startswith("nanopolish"):
-            return [parse_nanopolish(filename, file_type, name, window, smoothen=smoothen)]
+            return parse_nanopolish(filename, file_type, name, window, smoothen=smoothen)
         elif file_type == "nanocompore":
             return [parse_nanocompore(filename, name, window)]
         elif file_type in ["cram", "bam"]:
@@ -116,17 +116,25 @@ def parse_nanopolish(filename, file_type, name, window, smoothen=5):
         table = table.drop(columns=['Start', 'End', 'log_lik_methylated',
                                     'log_lik_unmethylated', 'num_calling_strands',
                                     'num_motifs', 'sequence'])
-        return Modification(
-            table=table.sort_values(['read_name', 'pos']),
-            data_type=file_type,
-            name=name,
-            called_sites=len(table))
+        if 'motif' in table:
+            return [Modification(table=sub_df,
+                                 data_type=file_type,
+                                 name=f"{name}_{mod}",
+                                 called_sites=len(sub_df),
+                                 )
+                    for mod, sub_df in table.groupby('motif')]
+        else:
+            return [Modification(
+                table=table.sort_values(['read_name', 'pos']),
+                data_type=file_type,
+                name=name,
+                called_sites=len(table))]
     if file_type == "nanopolish_freq":
         called_sites = table.called_sites
         table = table.drop(columns=['Start', 'End', 'num_motifs_in_group',
                                     'called_sites', 'called_sites_methylated',
                                     'group_sequence'])
-        return Modification(
+        return [Modification(
             table=table.sort_values('pos')
                        .groupby('pos')
                        .mean()
@@ -134,7 +142,7 @@ def parse_nanopolish(filename, file_type, name, window, smoothen=5):
                        .mean(),
             data_type=file_type,
             name=name,
-            called_sites=called_sites.sum())
+            called_sites=called_sites.sum())]
 
 
 def parse_nanocompore(filename, name, window):

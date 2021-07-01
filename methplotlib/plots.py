@@ -149,7 +149,7 @@ def methylation(meth_data, dotsize=4, binary=False, minqual=20):
 def make_per_read_meth_traces_phred(table, minmax_table, max_cov=100, dotsize=4, minqual=20):
     """Make traces for each read"""
     df_heights = assign_y_height_per_read(minmax_table, max_coverage=max_cov)
-    table = table.join(df_heights, on="read_name")
+    table = table.join(df_heights, on="read_name", how="outer")
     traces = []
     hidden = 0
     for read in table["read_name"].unique():

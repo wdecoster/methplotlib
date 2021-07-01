@@ -21,6 +21,7 @@ class Region(object):
                 except ValueError:
                     pass
                 self.begin, self.end = [int(i) for i in interval.split('-')]
+                self.start = self.begin
             except ValueError:
                 sys.exit("\n\nERROR: Window (-w/--window) inproperly formatted, "
                          "examples of accepted formats are:\n"

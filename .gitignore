@@ -238,3 +238,6 @@ tags
 [._]*.un~
 
 # End of https://www.gitignore.io/api/vim,linux,macos,emacs,python,jupyternotebooks
+
+
+.vscode

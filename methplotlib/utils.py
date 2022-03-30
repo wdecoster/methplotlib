@@ -32,7 +32,7 @@ class Region(object):
             if not self.size > 0:
                 sys.exit(
                     "\n\nERROR: Window (-w/--window) inproperly formatted, "
-                    "begin of the interval has to be larger than end\n\n"
+                    "begin of the interval has to be smaller than end\n\n"
                 )
             self.string = f"{self.chromosome}_{self.begin}_{self.end}"
         else:  # When region is an entire chromosome, contig or transcript

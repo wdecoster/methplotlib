@@ -12,7 +12,14 @@ iii) in ont-cram format with MM/MP tags according to the SAM specifications and 
 iv) in bedgraph format  
 
 ## INSTALLATION
+
+Creating a new conda environment:  
+`conda create -n methplotlib methplotlib`
+
+Or using pip:  
 `pip install methplotlib`
+
+
 
 ## USAGE
 ```

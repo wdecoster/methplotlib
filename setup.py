@@ -36,7 +36,7 @@ setup(
                       'pandas>=0.23.4',
                       'pyranges>=0.0.77',
                       'fisher>=0.1.9',
-                      'sklearn',
+                      'scikit-learn',
                       'pyfaidx',
                       'biopython',
                       'pysam'],

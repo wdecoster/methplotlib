@@ -8,6 +8,8 @@ import logging
 import plotly
 from pathlib import Path
 from itertools import chain
+from plotly import subplots
+from plotly.subplots import make_subplots
 
 
 class Region(object):

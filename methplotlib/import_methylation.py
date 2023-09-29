@@ -31,9 +31,7 @@ def get_data(methylation_files, names, window, smoothen=5):
     data is extracted within the window args.window
     Frequencies are smoothened using a sliding window
     """
-    return flatten(
-        [read_mods(f, n, window, smoothen) for f, n in zip(methylation_files, names)]
-    )
+    return flatten([read_mods(f, n, window, smoothen) for f, n in zip(methylation_files, names)])
 
 
 def read_mods(filename, name, window, smoothen=5):
@@ -50,9 +48,7 @@ def read_mods(filename, name, window, smoothen=5):
     logging.info(f"File {filename} is of type {file_type}")
     try:
         if file_type.startswith("nanopolish"):
-            return parse_nanopolish(
-                filename, file_type, name, window, smoothen=smoothen
-            )
+            return parse_nanopolish(filename, file_type, name, window, smoothen=smoothen)
         elif file_type == "nanocompore":
             return [parse_nanocompore(filename, name, window)]
         elif file_type in ["cram", "bam"]:
@@ -60,7 +56,9 @@ def read_mods(filename, name, window, smoothen=5):
         elif file_type == "bedgraph":
             return [parse_bedgraph(filename, name, window)]
         elif file_type == "bedmethyl_extended":
-            return [parse_bedmethyl(filename, name, window, smoothen=smoothen)]
+            return [parse_bedmethyl(filename, name, window, smoothen=smoothen, flavor="modbam2bed")]
+        elif file_type == "bedmethyl":
+            return [parse_bedmethyl(filename, name, window, smoothen=smoothen, flavor="modkit")]
     except Exception as e:
         logging.error(f"Error processing {filename}.")
         logging.error(e, exc_info=True)
@@ -92,14 +90,10 @@ def parse_nanopolish(filename, file_type, name, window, smoothen=5):
                 sys.stderr.write("Is tabix installed and on the PATH?.")
                 raise
             header = gzip.open(filename, "rt").readline().rstrip().split("\t")
-            table = pd.read_csv(
-                tabix_stream.stdout, sep="\t", header=None, names=header
-            )
+            table = pd.read_csv(tabix_stream.stdout, sep="\t", header=None, names=header)
         else:
             logging.info(f"Reading {filename} slowly by splitting the file in chunks.")
-            sys.stderr.write(
-                f"\nReading {filename} would be faster with bgzip and tabix.\n"
-            )
+            sys.stderr.write(f"\nReading {filename} would be faster with bgzip and tabix.\n")
             if file_type in ["nanopolish_call", "nanopolish_phased"]:
                 sys.stderr.write("Please index with 'tabix -S1 -s1 -b3 -e4'.\n")
             else:
@@ -170,8 +164,11 @@ def parse_nanopolish(filename, file_type, name, window, smoothen=5):
             ]
     if file_type == "nanopolish_freq":
         called_sites = table.called_sites
+        chromosome = table.Chromosome.values[0]
+
         table = table.drop(
             columns=[
+                "Chromosome",
                 "Start",
                 "End",
                 "num_motifs_in_group",
@@ -186,7 +183,8 @@ def parse_nanopolish(filename, file_type, name, window, smoothen=5):
                 .groupby("pos")
                 .mean()
                 .rolling(window=smoothen, center=True)
-                .mean(),
+                .mean()
+                .assign(Chromosome=chromosome),
                 data_type=file_type,
                 name=name,
                 called_sites=called_sites.sum(),
@@ -281,16 +279,28 @@ def parse_bedgraph(filename, name, window):
     )
 
 
-def parse_bedmethyl(filename, name, window, smoothen=5):
-    colnames = {
-        0: "Chromosome",
-        1: "Start",
-        2: "End",
-        # if multiple types of modification should be supported additionally column 3 has to be read
-        # 3: "Modification",
-        11: "canonical",
-        12: "modified",
-    }
+def parse_bedmethyl(filename, name, window, smoothen=5, flavor="modkit"):
+    if not flavor in ["modkit", "modbam2bed"]:
+        sys.exit(f"ERROR: flavor {flavor} not supported for bedmethyl.")
+    if flavor == "modkit":
+        colnames = {
+            0: "Chromosome",
+            1: "Start",
+            2: "End",
+            # if multiple types of modification should be supported additionally column 3 has to be read
+            # 3: "Modification",
+            10: "Frequency",
+        }
+    else:
+        colnames = {
+            0: "Chromosome",
+            1: "Start",
+            2: "End",
+            # if multiple types of modification should be supported additionally column 3 has to be read
+            # 3: "Modification",
+            11: "canonical",
+            12: "modified",
+        }
     usecols = colnames.keys()
     if window:
         from pathlib import Path
@@ -331,9 +341,9 @@ def parse_bedmethyl(filename, name, window, smoothen=5):
                 header=None,
                 usecols=usecols,
             )
-            table = pd.concat(
-                [chunk[chunk[0] == window.chromosome] for chunk in iter_csv]
-            ).rename(columns=colnames)
+            table = pd.concat([chunk[chunk[0] == window.chromosome] for chunk in iter_csv]).rename(
+                columns=colnames
+            )
     else:
         table = pd.read_csv(
             filename,
@@ -348,10 +358,14 @@ def parse_bedmethyl(filename, name, window, smoothen=5):
         if len(gr.df) == 0:
             sys.exit(f"No records for {filename} in {window.string}!\n")
     table = gr.df.sort_values("Start")
-    table["modified_frequency"] = table["modified"] / (
-        table["canonical"] + table["modified"]
+    if flavor == "modkit":
+        table["modified_frequency"] = table["Frequency"] / 100
+        table.drop(columns=["Frequency"], inplace=True)
+    else:
+        table["modified_frequency"] = table["modified"] / (table["canonical"] + table["modified"])
+    table.drop(
+        columns=["Chromosome", "End", "canonical", "modified"], inplace=True, errors="ignore"
     )
-    table.drop(columns=["Chromosome", "End", "canonical", "modified"], inplace=True)
     return Modification(
         table=table.rolling(window=smoothen, center=True).mean(),
         data_type="bedmethyl_extended",
@@ -367,13 +381,9 @@ def parse_cram(filename, filetype, name, window):
     cram = pysam.AlignmentFile(filename, mode)
     data = []
     start_stops = []
-    for read in cram.fetch(
-        reference=str(window.chromosome), start=window.begin, end=window.end
-    ):
+    for read in cram.fetch(reference=str(window.chromosome), start=window.begin, end=window.end):
         if not read.is_supplementary and not read.is_secondary:
-            start_stops.append(
-                (read.query_name, read.reference_start, read.reference_end)
-            )
+            start_stops.append((read.query_name, read.reference_start, read.reference_end))
             mod_positions = get_modified_reference_positions(read)
             if mod_positions:
                 data.extend(mod_positions)
@@ -430,11 +440,7 @@ def get_modified_reference_positions(read):
                 # Oddly, get_forward_sequence() returns the sequence as it came from the sequencer
                 # This is the same direction as the Mm/Ml tags are specified in
                 base_index = np.array(
-                    [
-                        i
-                        for i, letter in enumerate(read.get_forward_sequence())
-                        if letter == base
-                    ]
+                    [i for i, letter in enumerate(read.get_forward_sequence()) if letter == base]
                 )
                 # Based on both arrays, find those read coordinates that have a modification
                 modified_bases = base_index[locations]
@@ -449,9 +455,7 @@ def get_modified_reference_positions(read):
                 # The likelihoods are in an array of length of all Mm/MM deltas,
                 # and are not separated by context/modified nucleotide type
                 if read.has_tag(qualtag):
-                    likelihoods = read.get_tag(qualtag).tolist()[
-                        offset : offset + len(deltas)
-                    ]
+                    likelihoods = read.get_tag(qualtag).tolist()[offset : offset + len(deltas)]
                 else:
                     likelihoods = [255] * len(deltas)
                 offset += len(deltas)

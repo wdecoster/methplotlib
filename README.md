@@ -1,5 +1,3 @@
-[![Build Status](https://travis-ci.com/wdecoster/methplotlib.svg?branch=master)](https://travis-ci.com/wdecoster/methplotlib)
-[![Anaconda-Server Badge](https://anaconda.org/bioconda/methplotlib/badges/installer/conda.svg)](https://conda.anaconda.org/bioconda)
 [![Anaconda-Server Badge](https://anaconda.org/bioconda/methplotlib/badges/version.svg)](https://anaconda.org/bioconda/methplotlib)
 [![Anaconda-Server Badge](https://anaconda.org/bioconda/methplotlib/badges/license.svg)](https://anaconda.org/bioconda/methplotlib)
 
@@ -8,7 +6,7 @@
 This script generates a browser view on a window using data from  
 i) [nanopolish](https://github.com/jts/nanopolish), either as methylation calls or methylation frequencies (as processed by calculate_methylation_frequency.py). The methylation calls can additionally be phased using scripts/annotate_calls_by_phase.and scripts/split_calls_by_phase.py  
 ii) [nanocompore](https://github.com/tleonardi/nanocompore)  
-iii) in ont-cram format with MM/MP tags according to the SAM specifications and converted using e.g. [this script](https://github.com/kpalin/gcf52ref/blob/f5_to_usam/scripts/extract_methylation_fast5_to_sam.py)  
+iii) in ont-cram format with MM/ML tags according to the SAM specifications
 iv) in bedgraph format  
 
 ## INSTALLATION

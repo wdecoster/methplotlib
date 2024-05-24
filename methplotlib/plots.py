@@ -143,6 +143,7 @@ def methylation(meth_data, dotsize=4, binary=False, minqual=20):
                         mode="lines+markers",
                         name=meth.name,
                         hoverinfo=["name", "x"],
+                        showlegend=False
                     )
                 ]
             )

@@ -56,9 +56,9 @@ def read_mods(filename, name, window, args):
         elif file_type == "bedgraph":
             return [parse_bedgraph(filename, name, window)]
         elif file_type == "bedmethyl_extended":
-            return [parse_bedmethyl(filename, name, window, smoothen=args.smooth, flavor="modbam2bed")]
+            return parse_bedmethyl(filename, name, window, smoothen=args.smooth, flavor="modbam2bed", mods_of_interest=args.mods)
         elif file_type == "bedmethyl":
-            return [parse_bedmethyl(filename, name, window, smoothen=args.smooth, flavor="modkit")]
+            return parse_bedmethyl(filename, name, window, smoothen=args.smooth, flavor="modkit", mods_of_interest=args.mods)
     except Exception as e:
         logging.error(f"Error processing {filename}.")
         logging.error(e, exc_info=True)
@@ -279,7 +279,7 @@ def parse_bedgraph(filename, name, window):
     )
 
 
-def parse_bedmethyl(filename, name, window, smoothen=5, flavor="modkit"):
+def parse_bedmethyl(filename, name, window, smoothen=5, flavor="modkit", mods_of_interest=None):
     if not flavor in ["modkit", "modbam2bed"]:
         sys.exit(f"ERROR: flavor {flavor} not supported for bedmethyl.")
     if flavor == "modkit":
@@ -287,8 +287,7 @@ def parse_bedmethyl(filename, name, window, smoothen=5, flavor="modkit"):
             0: "Chromosome",
             1: "Start",
             2: "End",
-            # if multiple types of modification should be supported additionally column 3 has to be read
-            # 3: "Modification",
+            3: "Modification",
             10: "Frequency",
         }
     else:
@@ -296,8 +295,7 @@ def parse_bedmethyl(filename, name, window, smoothen=5, flavor="modkit"):
             0: "Chromosome",
             1: "Start",
             2: "End",
-            # if multiple types of modification should be supported additionally column 3 has to be read
-            # 3: "Modification",
+            3: "Modification",
             11: "canonical",
             12: "modified",
         }
@@ -366,12 +364,21 @@ def parse_bedmethyl(filename, name, window, smoothen=5, flavor="modkit"):
     table.drop(
         columns=["Chromosome", "End", "canonical", "modified"], inplace=True, errors="ignore"
     )
-    return Modification(
-        table=table.rolling(window=smoothen, center=True).mean(),
-        data_type="bedmethyl_extended",
-        name=name,
-        called_sites=len(table),
-    )
+    if mods_of_interest:
+        # mods of interest is in the form of C+m or C+h (as in the cram file)
+        # however, the bedmethyl file has the modifications in the form of m or h
+        # so we need to split the mods in mods_of_interest on the '+' and select the second part
+        table = table[table["Modification"].isin(m.split('+')[1] for m in mods_of_interest.split(","))]
+
+    return [
+        Modification(
+            table=sub_df.drop(columns=["Modification"]).rolling(window=smoothen, center=True).mean(),
+            data_type="bedmethyl_extended",
+            name=f"{name}_{mod}",
+            called_sites=len(sub_df),
+        )
+        for mod, sub_df in table.groupby("Modification") if len(sub_df) > 0
+    ]
 
 
 def parse_cram(filename, filetype, name, window, mods_of_interest=None):
@@ -401,9 +408,13 @@ def parse_cram(filename, filetype, name, window, mods_of_interest=None):
         .astype(dtype={"mod": "category", "quality": "float"})
         .sort_values(["read_name", "pos"])
     )
-    if mods_of_interest:
-        df = df[df["mod"].isin(mods_of_interest.split(","))]
 
+
+    if mods_of_interest:
+        mods_found = df["mod"].unique().categories.values
+        df = df[df["mod"].isin(mods_of_interest.split(","))]
+        if len(df) == 0:
+            sys.exit(f"No more records after selecting --mods!\nDetected modifications: {mods_found}\n")
     return [
         Modification(
             table=sub_df,
@@ -414,7 +425,7 @@ def parse_cram(filename, filetype, name, window, mods_of_interest=None):
                 start_stops, columns=["read_name", "posmin", "posmax"]
             ).set_index("read_name"),
         )
-        for mod, sub_df in df.groupby("mod")
+        for mod, sub_df in df.groupby("mod") if len(sub_df) > 0
     ]
 
 

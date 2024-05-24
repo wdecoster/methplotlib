@@ -16,7 +16,7 @@ class Modification(object):
         self.start_end_table = start_end_table
 
 
-def get_data(methylation_files, names, window, smoothen=5):
+def get_data(args, window):
     """
     Import methylation data from all files in the list methylation_files
 
@@ -31,10 +31,10 @@ def get_data(methylation_files, names, window, smoothen=5):
     data is extracted within the window args.window
     Frequencies are smoothened using a sliding window
     """
-    return flatten([read_mods(f, n, window, smoothen) for f, n in zip(methylation_files, names)])
+    return flatten([read_mods(f, n, window, args) for f, n in zip(args.methylation, args.names)])
 
 
-def read_mods(filename, name, window, smoothen=5):
+def read_mods(filename, name, window, args):
     """
     converts a file from nanopolish to a pandas dataframe
     input can be from calculate_methylation_frequency
@@ -48,17 +48,17 @@ def read_mods(filename, name, window, smoothen=5):
     logging.info(f"File {filename} is of type {file_type}")
     try:
         if file_type.startswith("nanopolish"):
-            return parse_nanopolish(filename, file_type, name, window, smoothen=smoothen)
+            return parse_nanopolish(filename, file_type, name, window, smoothen=args.smoothen)
         elif file_type == "nanocompore":
             return [parse_nanocompore(filename, name, window)]
         elif file_type in ["cram", "bam"]:
-            return parse_cram(filename, file_type, name, window)
+            return parse_cram(filename, file_type, name, window, args.mods)
         elif file_type == "bedgraph":
             return [parse_bedgraph(filename, name, window)]
         elif file_type == "bedmethyl_extended":
-            return [parse_bedmethyl(filename, name, window, smoothen=smoothen, flavor="modbam2bed")]
+            return [parse_bedmethyl(filename, name, window, smoothen=args.smooth, flavor="modbam2bed")]
         elif file_type == "bedmethyl":
-            return [parse_bedmethyl(filename, name, window, smoothen=smoothen, flavor="modkit")]
+            return [parse_bedmethyl(filename, name, window, smoothen=args.smooth, flavor="modkit")]
     except Exception as e:
         logging.error(f"Error processing {filename}.")
         logging.error(e, exc_info=True)
@@ -374,7 +374,16 @@ def parse_bedmethyl(filename, name, window, smoothen=5, flavor="modkit"):
     )
 
 
-def parse_cram(filename, filetype, name, window):
+def parse_cram(filename, filetype, name, window, mods_of_interest=None):
+    """
+    Extracts modified positions from a CRAM file
+
+    :param filename: str, path to the CRAM file
+    :param filetype: str, either 'cram' or 'bam'
+    :param name: str, name for the trace/sample
+    :param window: Region object to extract data for from the file
+    :param mods_of_interest: list of str, optional, list of modifications to extract
+    """
     import pysam
 
     mode = "rc" if filetype == "cram" else "rb"
@@ -392,6 +401,8 @@ def parse_cram(filename, filetype, name, window):
         .astype(dtype={"mod": "category", "quality": "float"})
         .sort_values(["read_name", "pos"])
     )
+    if mods_of_interest:
+        df = df[df["mod"].isin(mods_of_interest.split(","))]
 
     return [
         Modification(
@@ -415,7 +426,7 @@ def get_modified_reference_positions(read):
         offset = 0
         for context in read.get_tag(modtag).split(";"):
             if context:
-                basemod = context.split(",", 1)[0]
+                basemod = context.split(",", 1)[0].replace('?', '')
                 if "-" in basemod:
                     sys.exit(
                         "ERROR: modifications on negative strand currently unsupported.\n"

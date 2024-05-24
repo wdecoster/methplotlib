@@ -129,6 +129,12 @@ def get_args():
         default=5,
     )
     parser.add_argument(
+        "--mods",
+        help="Comma separated list of modifications to restrict to",
+        default=None,
+    )
+
+    parser.add_argument(
         "--dotsize",
         help="Control the size of dots in the per read plots",
         type=int,

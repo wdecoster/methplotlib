@@ -32,10 +32,7 @@ def good_record(line, chromosome):
     Filtering on the gtf lines
     by checking for right chromosome and right feature type
     """
-    if line.startswith(str(chromosome)) and line.split("\t")[2] in ["exon", "gene"]:
-        return True
-    else:
-        return False
+    return line.startswith(str(chromosome)) and line.split("\t")[2] in ["exon", "gene"]
 
 
 def get_features(gtfline, type="gtf"):

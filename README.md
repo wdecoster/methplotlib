@@ -4,10 +4,11 @@
 # METHPLOTLIB
 
 This script generates a browser view on a window using data from  
-i) [nanopolish](https://github.com/jts/nanopolish), either as methylation calls or methylation frequencies (as processed by calculate_methylation_frequency.py). The methylation calls can additionally be phased using scripts/annotate_calls_by_phase.and scripts/split_calls_by_phase.py  
+i) [nanopolish](https://github.com/jts/nanopolish), either as methylation calls or methylation frequencies (as processed by calculate_methylation_frequency.py). The methylation calls can additionally be phased using scripts/annotate_calls_by_phase.py and scripts/split_calls_by_phase.py  
 ii) [nanocompore](https://github.com/tleonardi/nanocompore)  
 iii) in ont-cram format with MM/ML tags according to the SAM specifications  
-iv) in bedgraph format  
+iv) in bedgraph format, with 4 columns (chromosome, start, end, value) or the 5 columns written by `modkit pileup --bedgraph`  
+v) in bedMethyl format, as written by [modkit](https://github.com/nanoporetech/modkit) `pileup` (18 columns, with or without `--only-tabs`) or by `modbam2bed --extended` (14 columns). Files containing multiple modifications (e.g. 5mC and 5hmC) do not have to be split up: each modification gets its own track, and `--mods` can be used to restrict to some of them  
 
 ## INSTALLATION
 

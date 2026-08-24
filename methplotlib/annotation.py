@@ -31,8 +31,14 @@ def good_record(line, chromosome):
     """
     Filtering on the gtf lines
     by checking for right chromosome and right feature type
+
+    The chromosome has to match the entire field, as a prefix match would
+    e.g. also accept chr10 up to chr19 and chr1_KI270706v1_random for chr1
     """
-    return line.startswith(str(chromosome)) and line.split("\t")[2] in ["exon", "gene"]
+    if line.startswith("#"):
+        return False
+    fields = line.split("\t")
+    return len(fields) > 2 and fields[0] == str(chromosome) and fields[2] in ["exon", "gene"]
 
 
 def get_features(gtfline, type="gtf"):
@@ -51,8 +57,10 @@ def parse_attributes(attributes, type="gtf"):
     """
     attribute_delimiter = {"gtf": "; ", "gff": ";"}
     kv_delimiter = {"gtf": " ", "gff": "="}
+    # the last attribute of a record keeps the trailing delimiter,
+    # which would otherwise end up in the name shown when hovering
     info = {
-        i.split(kv_delimiter[type])[0]: i.split(kv_delimiter[type])[1].replace('"', "")
+        i.split(kv_delimiter[type])[0]: i.split(kv_delimiter[type])[1].replace('"', "").rstrip(";")
         for i in attributes.split(attribute_delimiter[type])
         if i.startswith(("gene_name", "transcript_id", "locus_tag"))
     }
@@ -64,17 +72,19 @@ def parse_attributes(attributes, type="gtf"):
 
 def transcripts_in_window(df, window, feature="transcript"):
     """
-    Return the transcript names for which
-    either the end or the begin of an exon is within the window
+    Return the transcript names of the exons overlapping the window
+
+    Testing for overlap rather than for a begin or end within the window,
+    as otherwise a feature spanning the entire window would be missed
     """
     return df.loc[
-        df["begin"].between(window.begin, window.end) | df["end"].between(window.begin, window.end),
+        (df["begin"] <= window.end) & (df["end"] >= window.begin),
         feature,
     ].unique()
 
 
 def assign_colors_to_genes(transcripts):
-    genes = set([t.gene for t in transcripts])
+    genes = dict.fromkeys([t.gene for t in transcripts])
     colordict = {g: c for g, c in zip(genes, plcolors * 100)}
     for t in transcripts:
         t.color = colordict[t.gene]

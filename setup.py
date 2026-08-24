@@ -10,8 +10,8 @@ exec(open("methplotlib/version.py").read())
 
 setup(
     name="methplotlib",
-    version=__version__,
-    description="Plot methylation data obtained from nanopolish",
+    version=__version__,  # noqa: F821
+    description="Plot nucleotide modification data from nanopore sequencing",
     long_description=open(path.join(here, "README.md")).read(),
     long_description_content_type="text/markdown",
     scripts=[
@@ -28,13 +28,15 @@ setup(
         "Topic :: Scientific/Engineering :: Bio-Informatics",
         "License :: OSI Approved :: MIT License",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.3",
-        "Programming Language :: Python :: 3.4",
-        "Programming Language :: Python :: 3.5",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
+        "Programming Language :: Python :: 3.13",
     ],
-    keywords="nanopore",
-    packages=find_packages(),
-    python_requires=">=3",
+    keywords="nanopore methylation modification",
+    packages=find_packages(include=["methplotlib", "methplotlib.*"]),
+    python_requires=">=3.9",
     install_requires=[
         "plotly>=4.9.0",
         "numpy>=1.16.5",

@@ -3,6 +3,7 @@ import methplotlib.utils as utils
 import methplotlib.qc as qc
 from methplotlib.import_methylation import get_data
 import logging
+import sys
 
 
 def main():
@@ -20,6 +21,12 @@ def main():
             pickle.dump(
                 obj=meth_data,
                 file=open(f"methplotlib-data-{window.string}.pickle", "wb"),
+            )
+        if not meth_data:
+            sys.exit(
+                f"\n\nERROR: No data found in {window.chromosome}:{window.begin}-{window.end} "
+                "for any of the input files!\n"
+                "Please check your --window and the chromosome names in your input.\n"
             )
         logging.info(f"Collected methylation data for {len(meth_data)} datasets")
         qc.qc_plots(meth_data, window, qcpath=args.qcfile, outpath=args.outfile)
@@ -74,10 +81,13 @@ def meth_browser(meth_data, window, args):
                 fig["layout"].update(legend=dict(orientation="h"))
             elif sample_type == "ont-cram":
                 fig["layout"][f"yaxis{y}"].update(title="Reads", tickformat=",d")
-            elif sample_type in ["bedgraph", "bedmethyl_extended"]:
+            elif sample_type == "bedmethyl_extended":
+                fig["layout"][f"yaxis{y}"].update(
+                    title="Modified <br> frequency", range=[0, 1]
+                )
+            elif sample_type == "bedgraph":
                 fig["layout"][f"yaxis{y}"].update(title="Value")
             else:
-                import sys
                 sys.exit(f"ERROR: unrecognized data type {sample_type}")
     else:
         logging.info("Making browser in overlaying mode.")
@@ -97,9 +107,8 @@ def meth_browser(meth_data, window, args):
         elif meth_traces.types[0] == "bedgraph":
             fig["layout"]["yaxis"].update(title="Value")
         else:
-            import sys
             sys.exit(
-                f"ERROR: unexpectedly not splitting for input of type {sample_type}"
+                f"ERROR: unexpectedly not splitting for input of type {meth_traces.types[0]}"
             )
     logging.info("Prepared modification plots.")
 

@@ -39,10 +39,13 @@ def gtf_annotation(gtf, window, simplify=False):
     if annotation:
         for y_pos, transcript in enumerate(annotation):
             line = make_per_gene_annot_line_trace(transcript, window, y_pos)
+            # exons overlapping the window, rather than exons contained in it,
+            # so that an exon larger than the window is shown as well
+            # the plot is limited to the window by the range of the x axis
             exons = [
                 make_per_exon_arrow_trace(transcript, begin, end, y_pos)
                 for begin, end in transcript.exon_tuples
-                if window.begin < begin and window.end > end
+                if begin <= window.end and end >= window.begin
             ]
             result.extend([line, *exons])
         return result, y_pos
@@ -142,8 +145,7 @@ def methylation(meth_data, dotsize=4, binary=False, minqual=20):
                         y=meth.table["modified_frequency"],
                         mode="lines+markers",
                         name=meth.name,
-                        hoverinfo=["name", "x"],
-                        showlegend=False
+                        hoverinfo="name+x",
                     )
                 ]
             )
@@ -322,9 +324,9 @@ def rescale_log_likelihood_ratio(llr):
     negative ratios between -1 and 0
     """
     scaler = MinMaxScaler(feature_range=(0, 1))
-    llr[llr > 0] = scaler.fit_transform(llr[llr > 0].values.reshape(-1, 1)).tolist()
+    llr[llr > 0] = scaler.fit_transform(llr[llr > 0].values.reshape(-1, 1)).flatten()
     scaler = MinMaxScaler(feature_range=(-1, 0))
-    llr[llr < 0] = scaler.fit_transform(llr[llr < 0].values.reshape(-1, 1)).tolist()
+    llr[llr < 0] = scaler.fit_transform(llr[llr < 0].values.reshape(-1, 1)).flatten()
     return llr
 
 
@@ -396,8 +398,7 @@ def make_per_position_likelihood_scatter(read_table, maxval=0.75, dotsize=4):
             colorscale=old_RdBu,
             showscale=True,
             colorbar=dict(
-                title="Modification likelihood",
-                titleside="right",
+                title=dict(text="Modification likelihood", side="right"),
                 tickvals=[-maxval, 0, maxval],
                 ticktext=["Likely <br> unmodified", "0", "Likely <br> modified"],
                 ticks="outside",
@@ -433,8 +434,7 @@ def make_per_position_phred_scatter(read_table, dotsize=4):
                 color=read_table["quality"],
                 colorscale="Reds",
                 colorbar=dict(
-                    title="Modification probability",
-                    titleside="right",
+                    title=dict(text="Modification probability", side="right"),
                     tickvals=[read_table["quality"].min(), read_table["quality"].max()],
                     ticktext=["Likely <br> unmodified", "Likely <br> modified"],
                     ticks="outside",

@@ -23,7 +23,10 @@ def qc_plots(meth_data, window, qcpath=None, outpath=None):
     with open(outfile, 'w') as qc_report:
         qc_report.write(num_sites_bar(meth_data))
         if len([m for m in meth_data if m.data_type == "nanopolish_freq"]) > 0:
-            data = [m.table.rename({"methylated_frequency": m.name}, axis='columns')
+            # only the frequency column, as the Chromosome column of every dataset
+            # would collide in the join and end up in the plots below
+            data = [m.table[["methylated_frequency"]].rename({"methylated_frequency": m.name},
+                                                             axis='columns')
                     for m in meth_data if m.data_type == "nanopolish_freq"]
             full = data[0].join(data[1:]).dropna(how="any", axis="index")
             qc_report.write(modified_fraction_histogram(full))

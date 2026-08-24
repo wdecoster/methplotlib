@@ -27,17 +27,16 @@ def open_gtf(gtff):
     return gzip.open(gtff, "rt") if gtff.endswith(".gz") else open(gtff)
 
 
-def good_record(line, chromosome):
+def good_record(fields, chromosome):
     """
     Filtering on the gtf lines
     by checking for right chromosome and right feature type
 
+    Takes the first fields of a line, as splitting off the long attributes
+    field for every line of an annotation is a waste.
     The chromosome has to match the entire field, as a prefix match would
     e.g. also accept chr10 up to chr19 and chr1_KI270706v1_random for chr1
     """
-    if line.startswith("#"):
-        return False
-    fields = line.split("\t")
     return len(fields) > 2 and fields[0] == str(chromosome) and fields[2] in ["exon", "gene"]
 
 
@@ -100,10 +99,15 @@ def parse_annotation(gtff, window, simplify=False):
     chromosomes_seen = set()
     records = []
     for line in open_gtf(gtff):
-        if good_record(line, window.chromosome):
+        if line.startswith("#") or not line.strip():
+            continue
+        # only the fields needed to decide, the attributes are split off
+        # further down for the few lines that are of interest
+        fields = line.split("\t", 3)
+        if good_record(fields, window.chromosome):
             records.append(get_features(line, type=type))
-        elif line.strip() and not line.startswith("#"):
-            chromosomes_seen.add(line.split("\t")[0])
+        else:
+            chromosomes_seen.add(fields[0])
     if not records and chromosomes_seen:
         sys.stderr.write(
             f"\nWARNING: no exons or genes of chromosome '{window.chromosome}' "
@@ -121,9 +125,13 @@ def parse_annotation(gtff, window, simplify=False):
     if simplify:
         df.drop_duplicates(subset=["chromosome", "begin", "end", "gene"], inplace=True)
         res = []
-        for g in transcripts_in_window(df, window, feature="gene"):
-            gtable = df.loc[df["gene"] == g]
-            if len(gtable):
+        genes = transcripts_in_window(df, window, feature="gene")
+        # grouping the features of interest once, rather than scanning the
+        # entire frame again for every gene
+        per_gene = dict(list(df[df["gene"].isin(genes)].groupby("gene")))
+        for g in genes:
+            gtable = per_gene.get(g)
+            if gtable is not None and len(gtable):
                 res.append(
                     Transcript(
                         transcript=gtable["gene"].tolist()[0],
@@ -138,8 +146,15 @@ def parse_annotation(gtff, window, simplify=False):
         logging.info(f"Found {len(res)} gene(s) in the region.\n")
     else:
         res = []
-        for t in transcripts_in_window(df, window, feature="transcript"):
-            tr = df.loc[df["transcript"] == t]
+        transcripts = transcripts_in_window(df, window, feature="transcript")
+        # grouping the features of interest once, rather than scanning the
+        # entire frame again for every transcript
+        per_transcript = dict(list(df[df["transcript"].isin(transcripts)].groupby("transcript")))
+        for t in transcripts:
+            tr = per_transcript.get(t)
+            if tr is None or not len(tr):
+                # an annotation without transcript_id, e.g. some gff flavors
+                continue
             res.append(
                 Transcript(
                     transcript=t,

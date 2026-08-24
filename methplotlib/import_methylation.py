@@ -3,7 +3,7 @@ import pyranges as pr
 import numpy as np
 import sys
 import logging
-from methplotlib.utils import file_sniffer, flatten
+from methplotlib.utils import file_sniffer, flatten, bedmethyl_separator
 from itertools import repeat
 
 
@@ -48,13 +48,13 @@ def read_mods(filename, name, window, args):
     logging.info(f"File {filename} is of type {file_type}")
     try:
         if file_type.startswith("nanopolish"):
-            return parse_nanopolish(filename, file_type, name, window, smoothen=args.smoothen)
+            return parse_nanopolish(filename, file_type, name, window, smoothen=args.smooth)
         elif file_type == "nanocompore":
             return [parse_nanocompore(filename, name, window)]
         elif file_type in ["cram", "bam"]:
             return parse_cram(filename, file_type, name, window, args.mods)
         elif file_type == "bedgraph":
-            return [parse_bedgraph(filename, name, window)]
+            return parse_bedgraph(filename, name, window)
         elif file_type == "bedmethyl_extended":
             return parse_bedmethyl(filename, name, window, smoothen=args.smooth, flavor="modbam2bed", mods_of_interest=args.mods)
         elif file_type == "bedmethyl":
@@ -98,7 +98,9 @@ def parse_nanopolish(filename, file_type, name, window, smoothen=5):
                 sys.stderr.write("Please index with 'tabix -S1 -s1 -b3 -e4'.\n")
             else:
                 sys.stderr.write("Please index with 'tabix -S1 -s1 -b2 -e3'.\n")
-            iter_csv = pd.read_csv(filename, sep="\t", iterator=True, chunksize=1e6)
+            iter_csv = pd.read_csv(
+                filename, sep="\t", iterator=True, chunksize=int(1e6), dtype={"chromosome": str}
+            )
             table = pd.concat(
                 [chunk[chunk["chromosome"] == window.chromosome] for chunk in iter_csv]
             )
@@ -215,7 +217,56 @@ def parse_nanocompore(filename, name, window):
     )
 
 
+def no_records_warning(filename, window):
+    """
+    Warn that a file has no data in the window.
+    This is not fatal, as other files may still have data here.
+    """
+    message = f"No records for {filename} in {window.chromosome}:{window.begin}-{window.end}!"
+    logging.warning(message)
+    sys.stderr.write(f"\nWARNING: {message}\nThis dataset is skipped.\n")
+
+
+def read_in_chunks(filename, window, sep, usecols, index_suggestion):
+    """
+    Read a headerless file in chunks, keeping only the lines of the chromosome of interest.
+
+    This is the slow path, used when no tabix index is available.
+    The chromosome is read as a string, as that is how the window stores it,
+    and to avoid mixed types when a file has both numeric and non-numeric chromosomes.
+    """
+    logging.info(f"Reading {filename} slowly by splitting the file in chunks.")
+    sys.stderr.write(f"\nReading {filename} would be faster with bgzip and '{index_suggestion}'.\n")
+    iter_csv = pd.read_csv(
+        filename,
+        sep=sep,
+        iterator=True,
+        chunksize=int(1e6),
+        header=None,
+        usecols=usecols,
+        dtype={0: str},
+    )
+    chromosomes_seen = set()
+    chunks = []
+    for chunk in iter_csv:
+        chromosomes_seen.update(chunk[0].unique())
+        chunks.append(chunk[chunk[0] == window.chromosome])
+    if window.chromosome not in chromosomes_seen:
+        sys.stderr.write(
+            f"\nWARNING: chromosome '{window.chromosome}' not found in {filename}.\n"
+            f"The file contains {len(chromosomes_seen)} chromosomes, "
+            f"such as {', '.join(sorted(chromosomes_seen)[:5])}.\n"
+            "Do the chromosome names in --window match those in your file "
+            "(e.g. '1' versus 'chr1')?\n"
+        )
+    return pd.concat(chunks)
+
+
 def parse_bedgraph(filename, name, window):
+    # a bedgraph from `modkit pileup --bedgraph` has a fifth column with the coverage,
+    # which is ignored here
+    colnames = ["Chromosome", "Start", "End", "Value"]
+    usecols = [0, 1, 2, 3]
     if window:
         from pathlib import Path
 
@@ -240,43 +291,42 @@ def parse_bedgraph(filename, name, window):
                 tabix_stream.stdout,
                 sep="\t",
                 header=None,
-                names=["Chromosome", "Start", "End", "Value"],
+                usecols=usecols,
+                names=colnames,
+                dtype={0: str},
             )
         else:
-            logging.info(f"Reading {filename} slowly by splitting the file in chunks.")
-            sys.stderr.write(
-                f"\nReading {filename} would be faster with bgzip and 'tabix -p bed'.\n"
-            )
-            iter_csv = pd.read_csv(
+            table = read_in_chunks(
                 filename,
+                window,
                 sep="\t",
-                iterator=True,
-                chunksize=1e6,
-                header=None,
-                names=["Chromosome", "Start", "End", "Value"],
-            )
-            table = pd.concat(
-                [chunk[chunk["Chromosome"] == window.chromosome] for chunk in iter_csv]
-            )
+                usecols=usecols,
+                index_suggestion="tabix -p bed",
+            ).rename(columns=dict(zip(usecols, colnames)))
     else:
         table = pd.read_csv(
             filename,
             sep="\t",
             header=None,
-            names=["Chromosome", "Start", "End", "Value"],
+            usecols=usecols,
+            names=colnames,
+            dtype={0: str},
         )
     gr = pr.PyRanges(table)
     logging.info("Read the file in a dataframe.")
     if window:
         gr = gr[window.chromosome, window.begin : window.end]
         if len(gr.df) == 0:
-            sys.exit(f"No records for {filename} in {window.string}!\n")
-    return Modification(
-        table=gr.df.sort_values("Start"),
-        data_type="bedgraph",
-        name=name,
-        called_sites=len(table),
-    )
+            no_records_warning(filename, window)
+            return []
+    return [
+        Modification(
+            table=gr.df.sort_values("Start"),
+            data_type="bedgraph",
+            name=name,
+            called_sites=len(table),
+        )
+    ]
 
 
 def parse_bedmethyl(filename, name, window, smoothen=5, flavor="modkit", mods_of_interest=None):
@@ -299,7 +349,9 @@ def parse_bedmethyl(filename, name, window, smoothen=5, flavor="modkit", mods_of
             11: "canonical",
             12: "modified",
         }
-    usecols = colnames.keys()
+    usecols = list(colnames.keys())
+    # modkit separates the columns after BED9 by spaces, unless run with --only-tabs
+    sep = bedmethyl_separator(filename)
     if window:
         from pathlib import Path
 
@@ -322,39 +374,34 @@ def parse_bedmethyl(filename, name, window, smoothen=5, flavor="modkit", mods_of
                 raise
             table = pd.read_csv(
                 tabix_stream.stdout,
-                sep="\t",
+                sep=sep,
                 header=None,
                 usecols=usecols,
+                dtype={0: str},
             ).rename(columns=colnames)
         else:
-            logging.info(f"Reading {filename} slowly by splitting the file in chunks.")
-            sys.stderr.write(
-                f"\nReading {filename} would be faster with bgzip and 'tabix -p bed'.\n"
-            )
-            iter_csv = pd.read_csv(
+            table = read_in_chunks(
                 filename,
-                sep="\t",
-                iterator=True,
-                chunksize=1e6,
-                header=None,
+                window,
+                sep=sep,
                 usecols=usecols,
-            )
-            table = pd.concat([chunk[chunk[0] == window.chromosome] for chunk in iter_csv]).rename(
-                columns=colnames
-            )
+                index_suggestion="tabix -p bed",
+            ).rename(columns=colnames)
     else:
         table = pd.read_csv(
             filename,
-            sep="\t",
+            sep=sep,
             header=None,
             usecols=usecols,
+            dtype={0: str},
         ).rename(columns=colnames)
     gr = pr.PyRanges(table)
     logging.info("Read the file in a dataframe.")
     if window:
         gr = gr[window.chromosome, window.begin : window.end]
         if len(gr.df) == 0:
-            sys.exit(f"No records for {filename} in {window.string}!\n")
+            no_records_warning(filename, window)
+            return []
     table = gr.df.sort_values("Start")
     if flavor == "modkit":
         table["modified_frequency"] = table["Frequency"] / 100
@@ -368,7 +415,14 @@ def parse_bedmethyl(filename, name, window, smoothen=5, flavor="modkit", mods_of
         # mods of interest is in the form of C+m or C+h (as in the cram file)
         # however, the bedmethyl file has the modifications in the form of m or h
         # so we need to split the mods in mods_of_interest on the '+' and select the second part
-        table = table[table["Modification"].isin(m.split('+')[1] for m in mods_of_interest.split(","))]
+        mods = [m.split("+")[1] if "+" in m else m for m in mods_of_interest.split(",")]
+        modifications_found = sorted(table["Modification"].unique())
+        table = table[table["Modification"].isin(mods)]
+        if len(table) == 0:
+            sys.exit(
+                f"\n\nERROR: No records left for {filename} after selecting --mods!\n"
+                f"Modifications in this file: {', '.join(modifications_found)}\n"
+            )
 
     return [
         Modification(

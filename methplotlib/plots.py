@@ -322,9 +322,9 @@ def rescale_log_likelihood_ratio(llr):
     negative ratios between -1 and 0
     """
     scaler = MinMaxScaler(feature_range=(0, 1))
-    llr[llr > 0] = scaler.fit_transform(llr[llr > 0].values.reshape(-1, 1)).tolist()
+    llr[llr > 0] = scaler.fit_transform(llr[llr > 0].values.reshape(-1, 1)).flatten()
     scaler = MinMaxScaler(feature_range=(-1, 0))
-    llr[llr < 0] = scaler.fit_transform(llr[llr < 0].values.reshape(-1, 1)).tolist()
+    llr[llr < 0] = scaler.fit_transform(llr[llr < 0].values.reshape(-1, 1)).flatten()
     return llr
 
 
@@ -396,8 +396,7 @@ def make_per_position_likelihood_scatter(read_table, maxval=0.75, dotsize=4):
             colorscale=old_RdBu,
             showscale=True,
             colorbar=dict(
-                title="Modification likelihood",
-                titleside="right",
+                title=dict(text="Modification likelihood", side="right"),
                 tickvals=[-maxval, 0, maxval],
                 ticktext=["Likely <br> unmodified", "0", "Likely <br> modified"],
                 ticks="outside",
@@ -433,8 +432,7 @@ def make_per_position_phred_scatter(read_table, dotsize=4):
                 color=read_table["quality"],
                 colorscale="Reds",
                 colorbar=dict(
-                    title="Modification probability",
-                    titleside="right",
+                    title=dict(text="Modification probability", side="right"),
                     tickvals=[read_table["quality"].min(), read_table["quality"].max()],
                     ticktext=["Likely <br> unmodified", "Likely <br> modified"],
                     ticks="outside",

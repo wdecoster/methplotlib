@@ -311,9 +311,11 @@ def assign_y_height_per_read(df, phased=False, max_coverage=1000):
                 layer.append(read.posmax)
                 y_pos[read.Index] = y
                 break
-    return pd.DataFrame(
-        {"read": list(y_pos.keys()), "height": list(y_pos.values())}
-    ).set_index("read")
+    return (
+        pd.DataFrame({"read": list(y_pos.keys()), "height": list(y_pos.values())})
+        .astype({"read": str})
+        .set_index("read")
+    )
 
 
 def rescale_log_likelihood_ratio(llr):

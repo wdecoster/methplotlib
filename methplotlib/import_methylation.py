@@ -168,6 +168,9 @@ def parse_nanopolish(filename, file_type, name, window, smoothen=5):
         called_sites = table.called_sites
         chromosome = table.Chromosome.values[0]
 
+        # errors are ignored as a reformatted file may not have all of these,
+        # and numeric_only skips any column that was added to the file,
+        # which would make the mean below fail
         table = table.drop(
             columns=[
                 "Chromosome",
@@ -177,13 +180,14 @@ def parse_nanopolish(filename, file_type, name, window, smoothen=5):
                 "called_sites",
                 "called_sites_methylated",
                 "group_sequence",
-            ]
+            ],
+            errors="ignore",
         )
         return [
             Modification(
                 table=table.sort_values("pos")
                 .groupby("pos")
-                .mean()
+                .mean(numeric_only=True)
                 .rolling(window=smoothen, center=True)
                 .mean()
                 .assign(Chromosome=chromosome),
@@ -206,9 +210,13 @@ def parse_nanocompore(filename, name, window):
     table = pd.read_csv(filename, sep="\t", usecols=nanocompore_columns_of_interest)
     if window:
         table = table[table["ref_id"] == window.chromosome]
+    # a record at the end of the window extends the line to the edge of the plot,
+    # its pvalue of 1.0 is filled in below
     return Modification(
-        table=table.sort_values("pos")
-        .append({"pos": window.end}, ignore_index=True)
+        table=pd.concat(
+            [table.sort_values("pos"), pd.DataFrame({"pos": [window.end]})],
+            ignore_index=True,
+        )
         .drop(columns="ref_id")
         .fillna(1.0),
         data_type="nanocompore",

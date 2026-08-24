@@ -181,22 +181,25 @@ def init_logs(args):
 
 
 def print_example():
-    import pkg_resources
+    """
+    Print an example command
 
-    meth = pkg_resources.resource_filename("methplotlib", "examples/ACTB_calls.tsv.gz")
-    meth_freq = pkg_resources.resource_filename("methplotlib", "examples/meth_freq.tsv.gz")
-    bed = pkg_resources.resource_filename("methplotlib", "examples/DNAse_cluster.bed.gz")
-    annotation = pkg_resources.resource_filename("methplotlib", "examples/g38_locus.gtf.gz")
-
-    example = f"""
-methplotlib -m {meth} \\
-               {meth_freq} \\
+    The example files are not shipped with the package, to keep it small,
+    so the paths are relative to a clone of the repository
+    """
+    example = """
+methplotlib -m examples/NA19240-methylation_ACTB_calls.tsv.gz \\
+               examples/NA19240-methylation_ACTB_frequency.tsv.gz \\
             -n calls frequencies \\
             -w chr7:5,525,542-5,543,028 \\
-            -g {annotation} \\
+            -g examples/GRCh38-ACTB-locus.gtf.gz \\
             --simplify \\
-            -b {bed} \\
-            -o '{{region}}/example.html'""".strip()
+            -b examples/DNase_cluster_ACTB.bed.gz \\
+            -o '{region}/example.html'""".strip()
+    sys.stderr.write(
+        "Example command, using the files in the examples folder of\n"
+        "https://github.com/wdecoster/methplotlib\n\n"
+    )
     print(example)
     sys.exit(0)
 

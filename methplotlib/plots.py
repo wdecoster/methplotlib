@@ -189,13 +189,15 @@ def make_per_read_meth_traces_phred(
     table = table.join(df_heights, on="read_name", how="outer")
     traces = []
     hidden = 0
-    for read in table["read_name"].unique():
-        strand = table.loc[table["read_name"] == read, "strand"].values[0]
+    # one row per read, to avoid scanning the entire table for every read
+    per_read = table.drop_duplicates(subset="read_name").set_index("read_name")
+    for read in per_read.index:
+        strand = per_read.at[read, "strand"]
         try:
             traces.append(
                 make_per_read_line_trace(
                     read_range=minmax_table.loc[read],
-                    y_pos=df_heights.loc[read, "height"],
+                    y_pos=df_heights.at[read, "height"],
                     strand=strand,
                 )
             )
@@ -233,17 +235,16 @@ def make_per_read_meth_traces_llr(
         )
     traces = []
     hidden = 0
-    for read in table["read_name"].unique():
-        strand = table.loc[table["read_name"] == read, "strand"].values[0]
-        if phased:
-            phase = table.loc[table["read_name"] == read, "HP"].values[0]
-        else:
-            phase = None
+    # one row per read, to avoid scanning the entire table for every read
+    per_read = table.drop_duplicates(subset="read_name").set_index("read_name")
+    for read in per_read.index:
+        strand = per_read.at[read, "strand"]
+        phase = per_read.at[read, "HP"] if phased else None
         try:
             traces.append(
                 make_per_read_line_trace(
                     read_range=minmax_table.loc[read],
-                    y_pos=df_heights.loc[read, "height"],
+                    y_pos=df_heights.at[read, "height"],
                     strand=strand,
                     phase=phase,
                     size=dotsize,

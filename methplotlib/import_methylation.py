@@ -540,9 +540,10 @@ def get_modified_reference_positions(read):
                 # Nake an array with all read positions for which that nucleotide exists in the read
                 # Oddly, get_forward_sequence() returns the sequence as it came from the sequencer
                 # This is the same direction as the Mm/Ml tags are specified in
-                base_index = np.array(
-                    [i for i, letter in enumerate(read.get_forward_sequence()) if letter == base]
-                )
+                # the positions of that nucleotide in the read, found with numpy
+                # as a python loop over every base of a long read is expensive
+                sequence = np.frombuffer(read.get_forward_sequence().encode(), dtype="S1")
+                base_index = np.flatnonzero(sequence == base.encode())
                 # Based on both arrays, find those read coordinates that have a modification
                 modified_bases = base_index[locations]
                 # Convert the array of read coordinates to reference coordinates

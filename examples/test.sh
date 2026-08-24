@@ -7,3 +7,11 @@ methplotlib -m examples/NA19240-methylation_ACTB_calls.tsv.gz examples/NA19240-m
             -g examples/GRCh38-ACTB-locus.gtf.gz \
             --simplify \
             -b examples/DNase_cluster_ACTB.bed.gz
+
+# the same annotation without --simplify, which takes a different code path
+# through parse_annotation and used to fail on gtf records without a transcript_id
+methplotlib -m examples/NA19240-methylation_ACTB_frequency.tsv.gz \
+            -n frequencies \
+            -w chr7:5,525,542-5,543,028 \
+            -g examples/GRCh38-ACTB-locus.gtf.gz \
+            -b examples/DNase_cluster_ACTB.bed.gz

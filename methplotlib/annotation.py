@@ -57,8 +57,10 @@ def parse_attributes(attributes, type="gtf"):
     """
     attribute_delimiter = {"gtf": "; ", "gff": ";"}
     kv_delimiter = {"gtf": " ", "gff": "="}
+    # the last attribute of a record keeps the trailing delimiter,
+    # which would otherwise end up in the name shown when hovering
     info = {
-        i.split(kv_delimiter[type])[0]: i.split(kv_delimiter[type])[1].replace('"', "")
+        i.split(kv_delimiter[type])[0]: i.split(kv_delimiter[type])[1].replace('"', "").rstrip(";")
         for i in attributes.split(attribute_delimiter[type])
         if i.startswith(("gene_name", "transcript_id", "locus_tag"))
     }

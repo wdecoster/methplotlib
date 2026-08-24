@@ -81,7 +81,11 @@ def meth_browser(meth_data, window, args):
                 fig["layout"].update(legend=dict(orientation="h"))
             elif sample_type == "ont-cram":
                 fig["layout"][f"yaxis{y}"].update(title="Reads", tickformat=",d")
-            elif sample_type in ["bedgraph", "bedmethyl_extended"]:
+            elif sample_type == "bedmethyl_extended":
+                fig["layout"][f"yaxis{y}"].update(
+                    title="Modified <br> frequency", range=[0, 1]
+                )
+            elif sample_type == "bedgraph":
                 fig["layout"][f"yaxis{y}"].update(title="Value")
             else:
                 sys.exit(f"ERROR: unrecognized data type {sample_type}")

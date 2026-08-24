@@ -426,13 +426,27 @@ def parse_bedmethyl(filename, name, window, smoothen=5, flavor="modkit", mods_of
 
     return [
         Modification(
-            table=sub_df.drop(columns=["Modification"]).rolling(window=smoothen, center=True).mean(),
+            table=smoothen_frequency(sub_df.drop(columns=["Modification"]), smoothen),
             data_type="bedmethyl_extended",
             name=f"{name}_{mod}",
             called_sites=len(sub_df),
         )
         for mod, sub_df in table.groupby("Modification") if len(sub_df) > 0
     ]
+
+
+def smoothen_frequency(table, smoothen):
+    """
+    Rolling average of the modification frequency
+
+    Only the frequency is averaged, as averaging the positions as well would
+    plot the records in between the sites they were observed at.
+    Averaging over fewer records at the edges avoids losing those records.
+    """
+    table["modified_frequency"] = (
+        table["modified_frequency"].rolling(window=smoothen, center=True, min_periods=1).mean()
+    )
+    return table
 
 
 def parse_cram(filename, filetype, name, window, mods_of_interest=None):
@@ -465,10 +479,13 @@ def parse_cram(filename, filetype, name, window, mods_of_interest=None):
 
 
     if mods_of_interest:
-        mods_found = df["mod"].unique().categories.values
+        mods_found = sorted(df["mod"].astype(str).unique())
         df = df[df["mod"].isin(mods_of_interest.split(","))]
         if len(df) == 0:
-            sys.exit(f"No more records after selecting --mods!\nDetected modifications: {mods_found}\n")
+            sys.exit(
+                f"\n\nERROR: No records left for {filename} after selecting --mods!\n"
+                f"Modifications in this file: {', '.join(mods_found)}\n"
+            )
     return [
         Modification(
             table=sub_df,

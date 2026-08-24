@@ -121,7 +121,8 @@ def get_args():
     )
     parser.add_argument(
         "--smooth",
-        help="Rolling window size for averaging frequency values",
+        help="Rolling window size for averaging frequency values. "
+        "Counted in records, and both strands are separate records in bedmethyl",
         type=int,
         default=5,
     )
@@ -139,7 +140,8 @@ def get_args():
     )
     parser.add_argument(
         "--minqual",
-        help="The minimal phred quality to show [for bam/cram input only]",
+        help="The minimal modification probability to show, on the 0-255 scale "
+        "of the ML tag [for bam/cram input only]",
         type=int,
         default=20,
     )

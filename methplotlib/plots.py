@@ -39,10 +39,13 @@ def gtf_annotation(gtf, window, simplify=False):
     if annotation:
         for y_pos, transcript in enumerate(annotation):
             line = make_per_gene_annot_line_trace(transcript, window, y_pos)
+            # exons overlapping the window, rather than exons contained in it,
+            # so that an exon larger than the window is shown as well
+            # the plot is limited to the window by the range of the x axis
             exons = [
                 make_per_exon_arrow_trace(transcript, begin, end, y_pos)
                 for begin, end in transcript.exon_tuples
-                if window.begin < begin and window.end > end
+                if begin <= window.end and end >= window.begin
             ]
             result.extend([line, *exons])
         return result, y_pos

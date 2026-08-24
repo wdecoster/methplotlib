@@ -80,7 +80,7 @@ def get_args():
         "-m",
         "--methylation",
         nargs="+",
-        help="data in nanopolish, nanocompore, ont-cram or bedgraph format",
+        help="data in nanopolish, nanocompore, bam/cram with MM/ML tags, bedgraph or bedmethyl format",
         required=True if "--example" not in sys.argv else False,
     )
     parser.add_argument(
@@ -325,7 +325,8 @@ def file_sniffer(filename):
         return "bam"
     header = first_data_line(filename)
 
-    if "GMM_anova_pvalue" in header:
+    # nanocompore renamed GMM_anova_pvalue to GMM_logit_pvalue
+    if "GMM_anova_pvalue" in header or "GMM_logit_pvalue" in header:
         return "nanocompore"
     if "log_lik_methylated" in header:
         if "PS" in header:

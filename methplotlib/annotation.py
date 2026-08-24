@@ -97,12 +97,24 @@ def parse_annotation(gtff, window, simplify=False):
     """
     type = annot_file_sniffer(gtff)
     logging.info(f"Parsing {type} file...")
+    chromosomes_seen = set()
+    records = []
+    for line in open_gtf(gtff):
+        if good_record(line, window.chromosome):
+            records.append(get_features(line, type=type))
+        elif line.strip() and not line.startswith("#"):
+            chromosomes_seen.add(line.split("\t")[0])
+    if not records and chromosomes_seen:
+        sys.stderr.write(
+            f"\nWARNING: no exons or genes of chromosome '{window.chromosome}' "
+            f"in {gtff}.\n"
+            f"The annotation contains {len(chromosomes_seen)} chromosomes, "
+            f"such as {', '.join(sorted(chromosomes_seen)[:5])}.\n"
+            "Do the chromosome names in --window match those in your annotation "
+            "(e.g. '15' versus 'chr15')?\n"
+        )
     df = pd.DataFrame(
-        data=[
-            get_features(line, type=type)
-            for line in open_gtf(gtff)
-            if good_record(line, window.chromosome)
-        ],
+        data=records,
         columns=["chromosome", "begin", "end", "strand", "gene", "transcript"],
     )
     logging.info("Loaded GTF file, processing...")

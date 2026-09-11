@@ -35,8 +35,7 @@ html = plotly.offline.plot(
      "layout": go.Layout(barmode='overlay',
                          title="Methylation per allele across the C9ORF72 locus")
      },
-    output_type="div",
-    show_link=False)
+    output_type="div")
 
 with open("plot.html", 'w') as output:
     output.write(html)

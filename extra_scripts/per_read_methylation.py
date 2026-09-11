@@ -57,8 +57,7 @@ def main():
                              height=1000,
                              )
          },
-        output_type="div",
-        show_link=False)
+        output_type="div")
 
     with open(args.output, 'w') as output:
         output.write(html)

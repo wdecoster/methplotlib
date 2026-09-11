@@ -35,8 +35,7 @@ def single_observation_plot(meth):
          "layout": go.Layout(barmode='overlay',
                              title="Methylation per allele")
          },
-        output_type="div",
-        show_link=False)
+        output_type="div")
 
     with open("single_observation_plot.html", 'w') as output:
         output.write(html)
@@ -69,8 +68,7 @@ def windowed_mean_plot(meth, legend=False):
                              width=1500,
                              height=1000,)
          },
-        output_type="div",
-        show_link=False)
+        output_type="div")
 
     with open("windowed_mean_plot.html", 'w') as output:
         output.write(html)

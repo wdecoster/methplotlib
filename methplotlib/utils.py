@@ -405,5 +405,5 @@ def create_browser_output(fig, outfile, window):
 def write_html_output(fig, outfile):
     with open(outfile, "w+") as output:
         output.write(
-            plotly.offline.plot(fig, output_type="div", show_link=False, include_plotlyjs="cdn")
+            plotly.offline.plot(fig, output_type="div", include_plotlyjs="cdn")
         )

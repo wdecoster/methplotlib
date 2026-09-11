@@ -45,7 +45,6 @@ def num_sites_bar(meth_data):
     layout = dict(title="Number of called positions")
     return plotly.offline.plot(dict(data=[trace], layout=layout),
                                output_type="div",
-                               show_link=False,
                                include_plotlyjs='cdn')
 
 
@@ -72,7 +71,6 @@ def pairwise_correlation_plot(full):
 
     return plotly.offline.plot(dict(data=[trace], layout=layout),
                                output_type="div",
-                               show_link=False,
                                include_plotlyjs='cdn')
 
 
@@ -99,7 +97,6 @@ def pca(full):
                   )
     return plotly.offline.plot(dict(data=data, layout=layout),
                                output_type="div",
-                               show_link=False,
                                include_plotlyjs='cdn')
 
 
@@ -110,7 +107,6 @@ def global_box(data):
                  x="dataset", y="freq", title="Global frequency of modification")
     return plotly.offline.plot(fig,
                                output_type="div",
-                               show_link=False,
                                include_plotlyjs='cdn')
 
 
@@ -129,5 +125,4 @@ def modified_fraction_histogram(full):
     return plotly.offline.plot(dict(data=traces,
                                     layout=layout),
                                output_type="div",
-                               show_link=False,
                                include_plotlyjs='cdn')

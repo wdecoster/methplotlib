@@ -19,19 +19,20 @@ def get_region(wildcards):
 
 rule all:
     input:
-        expand("methylation_frequency/{region}_{sample}.tsv",
+        expand("{prefix}methylation_frequency/{region}_{sample}.tsv",
                sample=config["fastq"],
-               region=config["region"])
+               region=config["region"],
+               prefix=config.get("prefix", ""))
 
 rule nanopolish_index:
     input:
         f5 = get_fast5,
         fq = get_fastq,
     output:
-        "indices/index_done_{sample}"
+        "{prefix}indices/index_done_{sample}"
     threads: 10  # Just to ensure that this is not ran in parallel for too many samples
     log:
-        "logs/nanopolish_index/index_{sample}.log"
+        "{prefix}logs/nanopolish_index/index_{sample}.log"
     shell:
         """
         nanopolish index -d {input.f5}/ {input.fq} 2> {log}
@@ -45,12 +46,12 @@ rule call_methylation:
         bam = get_bam,
         genome = config["genome"],
     output:
-        "methylation_calls/{region}_{sample}.tsv"
+        "{prefix}methylation_calls/{region}_{sample}.tsv"
     threads: 8
     params:
         region = get_region,
     log:
-        "logs/methylation/methcall_{region}_{sample}.log"
+        "{prefix}logs/methylation/methcall_{region}_{sample}.log"
     shell:
         """
         nanopolish call-methylation \
@@ -63,11 +64,11 @@ rule call_methylation:
 
 rule methylation_frequency:
     input:
-        "methylation_calls/{region}_{sample}.tsv"
+        "{prefix}methylation_calls/{region}_{sample}.tsv"
     output:
-        "methylation_frequency/{region}_{sample}.tsv"
+        "{prefix}methylation_frequency/{region}_{sample}.tsv"
     log:
-        "logs/methylation/methfreq_{region}_{sample}.log"
+        "{prefix}logs/methylation/methfreq_{region}_{sample}.log"
     params:
         script = os.path.join(workflow.basedir, "scripts/calculate_methylation_frequency.py")
     shell:

@@ -91,6 +91,7 @@ def parse_nanopolish(filename, file_type, name, window, smoothen=5):
                 raise
             header = gzip.open(filename, "rt").readline().rstrip().split("\t")
             table = pd.read_csv(tabix_stream.stdout, sep="\t", header=None, names=header)
+            check_tabix(tabix_stream, filename, window)
         else:
             logging.info(f"Reading {filename} slowly by splitting the file in chunks.")
             sys.stderr.write(f"\nReading {filename} would be faster with bgzip and tabix.\n")
@@ -235,6 +236,19 @@ def no_records_warning(filename, window):
     sys.stderr.write(f"\nWARNING: {message}\nThis dataset is skipped.\n")
 
 
+def check_tabix(tabix_stream, filename, window):
+    """
+    Exit if tabix failed, as a failing tabix also writes nothing to stdout,
+    which would otherwise be reported as a window without records.
+    Only call this after its stdout has been read.
+    """
+    if tabix_stream.wait() != 0:
+        sys.exit(
+            f"\n\nERROR: tabix failed to read {window.chromosome}:{window.begin}-{window.end} "
+            f"from {filename}:\n{tabix_stream.stderr.read().decode()}"
+        )
+
+
 def read_in_chunks(filename, window, sep, usecols, index_suggestion):
     """
     Read a headerless file in chunks, keeping only the lines of the chromosome of interest.
@@ -303,6 +317,7 @@ def parse_bedgraph(filename, name, window):
                 names=colnames,
                 dtype={0: str},
             )
+            check_tabix(tabix_stream, filename, window)
         else:
             table = read_in_chunks(
                 filename,
@@ -380,13 +395,21 @@ def parse_bedmethyl(filename, name, window, smoothen=5, flavor="modkit", mods_of
                 sys.stderr.write("\n\nERROR when opening a tabix stream.\n")
                 sys.stderr.write("Is tabix installed and on the PATH?.")
                 raise
-            table = pd.read_csv(
-                tabix_stream.stdout,
-                sep=sep,
-                header=None,
-                usecols=usecols,
-                dtype={0: str},
-            ).rename(columns=colnames)
+            try:
+                table = pd.read_csv(
+                    tabix_stream.stdout,
+                    sep=sep,
+                    header=None,
+                    usecols=usecols,
+                    dtype={0: str},
+                ).rename(columns=colnames)
+            except pd.errors.EmptyDataError:
+                table = None
+            check_tabix(tabix_stream, filename, window)
+            # tabix writes nothing if the window has no records or the chromosome is not in the index
+            if table is None:
+                no_records_warning(filename, window)
+                return []
         else:
             table = read_in_chunks(
                 filename,

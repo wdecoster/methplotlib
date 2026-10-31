@@ -1,5 +1,3 @@
-from sklearn.decomposition import PCA
-import plotly.express as px
 import pandas as pd
 import plotly
 import plotly.graph_objs as go
@@ -75,6 +73,9 @@ def pairwise_correlation_plot(full):
 
 
 def pca(full):
+    # imported here, as importing sklearn takes a while and is rarely needed
+    from sklearn.decomposition import PCA
+
     sklearn_pca = PCA(n_components=2)
     pca = sklearn_pca.fit_transform(full.transpose())
     data = [dict(type='scatter',
@@ -101,6 +102,8 @@ def pca(full):
 
 
 def global_box(data):
+    import plotly.express as px
+
     fig = px.box(pd.concat([d.reset_index(drop=True)
                             .rename({d.columns[0]: "freq"}, axis="columns")
                             .assign(dataset=d.columns[0]) for d in data], ignore_index=True),

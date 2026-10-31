@@ -1,12 +1,20 @@
 import plotly.graph_objs as go
 from methplotlib.annotation import parse_annotation, parse_bed
 import sys
-from sklearn.preprocessing import MinMaxScaler
 import pandas as pd
 import numpy as np
 
 
 legend_made = False
+
+# Above this number of dots, a per read panel is drawn with WebGL rather than SVG,
+# as an SVG element per dot makes the browser slow to show, zoom and pan.
+WEBGL_THRESHOLD = 10_000
+
+
+def scatter_type(n_points):
+    """The scatter trace type for a per read panel with n_points dots"""
+    return go.Scattergl if n_points > WEBGL_THRESHOLD else go.Scatter
 
 
 class DataTraces(object):
@@ -187,31 +195,17 @@ def make_per_read_meth_traces_phred(
     """Make traces for each read"""
     df_heights = assign_y_height_per_read(minmax_table, max_coverage=max_cov)
     table = table.join(df_heights, on="read_name", how="outer")
-    traces = []
-    hidden = 0
     # one row per read, to avoid scanning the entire table for every read
     per_read = table.drop_duplicates(subset="read_name").set_index("read_name")
-    for read in per_read.index:
-        strand = per_read.at[read, "strand"]
-        try:
-            traces.append(
-                make_per_read_line_trace(
-                    read_range=minmax_table.loc[read],
-                    y_pos=df_heights.at[read, "height"],
-                    strand=strand,
-                )
-            )
-        except KeyError:
-            hidden += 1
-            continue
-    if hidden:
-        sys.stderr.write(
-            f"Warning: hiding {hidden} reads because coverage above {max_cov}x.\n"
-        )
+    read_table = table[table["quality"] > minqual]
+    # the lines of the reads are of the same type as the dots,
+    # as WebGL traces are drawn on a layer above the SVG traces
+    scatter = scatter_type(len(read_table))
+    traces = make_per_read_line_trace(
+        per_read, minmax_table, df_heights, max_cov, scatter=scatter
+    )
     traces.append(
-        make_per_position_phred_scatter(
-            read_table=table[table["quality"] > minqual], dotsize=dotsize
-        )
+        make_per_position_phred_scatter(read_table=read_table, dotsize=dotsize, scatter=scatter)
     )
     return traces
 
@@ -233,32 +227,14 @@ def make_per_read_meth_traces_llr(
         table.loc[:, "llr_scaled"] = rescale_log_likelihood_ratio(
             table["log_lik_ratio"].copy()
         )
-    traces = []
-    hidden = 0
     # one row per read, to avoid scanning the entire table for every read
     per_read = table.drop_duplicates(subset="read_name").set_index("read_name")
-    for read in per_read.index:
-        strand = per_read.at[read, "strand"]
-        phase = per_read.at[read, "HP"] if phased else None
-        try:
-            traces.append(
-                make_per_read_line_trace(
-                    read_range=minmax_table.loc[read],
-                    y_pos=df_heights.at[read, "height"],
-                    strand=strand,
-                    phase=phase,
-                    size=dotsize,
-                )
-            )
-        except KeyError:
-            hidden += 1
-            continue
-    if hidden:
-        sys.stderr.write(
-            f"Warning: hiding {hidden} reads because coverage above {max_cov}x.\n"
-        )
+    scatter = scatter_type(len(table))
+    traces = make_per_read_line_trace(
+        per_read, minmax_table, df_heights, max_cov, phased=phased, size=dotsize, scatter=scatter
+    )
     traces.append(
-        make_per_position_likelihood_scatter(read_table=table, dotsize=dotsize)
+        make_per_position_likelihood_scatter(read_table=table, dotsize=dotsize, scatter=scatter)
     )
     return traces
 
@@ -326,6 +302,9 @@ def rescale_log_likelihood_ratio(llr):
     positive ratios between 0 and 1
     negative ratios between -1 and 0
     """
+    # imported here, as importing sklearn takes a while and is only needed for nanopolish calls
+    from sklearn.preprocessing import MinMaxScaler
+
     scaler = MinMaxScaler(feature_range=(0, 1))
     llr[llr > 0] = scaler.fit_transform(llr[llr > 0].values.reshape(-1, 1)).flatten()
     scaler = MinMaxScaler(feature_range=(-1, 0))
@@ -346,35 +325,72 @@ def binarize_log_likelihood_ratio(llr, cutoff=2):
     return llr
 
 
-def make_per_read_line_trace(read_range, y_pos, strand, phase=None, size=4):
-    """Make a grey line trace for a single read,
-    with black arrow symbols on the edges indicating strand"""
-    symbol = "triangle-right" if strand == "+" else "triangle-left"
+def phase_color(phase):
     if phase:
         if phase == 1:
-            color = "lightgreen"
+            return "lightgreen"
         elif phase == 2:
-            color = "yellow"
+            return "yellow"
         else:  # phase is np.nan
-            color = "black"
+            return "black"
     else:
-        color = "black"
-    return go.Scatter(
-        x=[read_range["posmin"], read_range["posmax"]],
-        y=[y_pos, y_pos],
-        mode="lines+markers",
-        line=dict(width=1, color="lightgrey"),
-        showlegend=False,
-        marker=dict(
-            symbol=symbol,
-            size=size * 2,
-            color=color,
-            line=dict(width=0.5, color="black"),
-        ),
-    )
+        return "black"
 
 
-def make_per_position_likelihood_scatter(read_table, maxval=0.75, dotsize=4):
+def make_per_read_line_trace(
+    per_read, minmax_table, df_heights, max_cov, phased=False, size=4, scatter=go.Scatter
+):
+    """Make a grey line for every read,
+    with black arrow symbols on the edges indicating strand
+
+    All reads are in a single trace, separated by None, which plotly does not connect,
+    as a trace per read makes the browser slow for many reads.
+    Reads without a height are hidden, as the coverage is too high.
+    Returns a list with that trace, or an empty list if there are no reads to show.
+    """
+    shown = per_read.index[
+        per_read.index.isin(df_heights.index) & per_read.index.isin(minmax_table.index)
+    ]
+    hidden = len(per_read) - len(shown)
+    if hidden:
+        sys.stderr.write(
+            f"Warning: hiding {hidden} reads because coverage above {max_cov}x.\n"
+        )
+    if len(shown) == 0:
+        return []
+    x, y, symbols, colors = [], [], [], []
+    for read, posmin, posmax, height, strand in zip(
+        shown,
+        minmax_table.loc[shown, "posmin"],
+        minmax_table.loc[shown, "posmax"],
+        df_heights.loc[shown, "height"],
+        # the strand of the reads without calls is only in the table of all reads
+        (minmax_table if "strand" in minmax_table else per_read).loc[shown, "strand"],
+    ):
+        symbol = "triangle-right" if strand == "+" else "triangle-left"
+        color = phase_color(per_read.at[read, "HP"]) if phased else "black"
+        x.extend([posmin, posmax, None])
+        y.extend([height, height, None])
+        symbols.extend([symbol] * 3)
+        colors.extend([color] * 3)
+    return [
+        scatter(
+            x=x,
+            y=y,
+            mode="lines+markers",
+            line=dict(width=1, color="lightgrey"),
+            showlegend=False,
+            marker=dict(
+                symbol=symbols,
+                size=size * 2,
+                color=colors,
+                line=dict(width=0.5, color="black"),
+            ),
+        )
+    ]
+
+
+def make_per_position_likelihood_scatter(read_table, maxval=0.75, dotsize=4, scatter=go.Scatter):
     """Make scatter plot per CpG per read
     with the RdBu colorscale from plotly 3.0.0, showing the
     scaled log likelihood of having methylation here"""
@@ -386,7 +402,7 @@ def make_per_position_likelihood_scatter(read_table, maxval=0.75, dotsize=4):
         [0.7, "rgb(230,145,90)"],
         [1, "rgb(178,10,28)"],
     ]
-    return go.Scatter(
+    return scatter(
         x=read_table["pos"],
         y=read_table["height"],
         mode="markers",
@@ -410,31 +426,52 @@ def make_per_position_likelihood_scatter(read_table, maxval=0.75, dotsize=4):
     )
 
 
-def make_per_position_phred_scatter(read_table, dotsize=4):
+def same_text_for_all(values):
+    """
+    A single string rather than one per point if all points have the same text,
+    which plotly shows the same, but makes the html file a lot smaller
+    """
+    unique = values.unique()
+    if len(unique) == 1 and isinstance(unique[0], str):
+        return unique[0]
+    return values
+
+
+def compact_quality(quality):
+    """
+    The ML probabilities are integers from 0 to 255, so stored as such rather than as floats,
+    which plotly shows the same, but makes the html file a lot smaller
+    """
+    if quality.between(0, 255).all() and (quality == np.floor(quality)).all():
+        return quality.astype(np.uint8)
+    return quality
+
+
+def make_per_position_phred_scatter(read_table, dotsize=4, scatter=go.Scatter):
     """Make scatter plot per CpG per read"""
     global legend_made
     if legend_made or read_table.dropna().empty:
-        return go.Scatter(
+        return scatter(
             x=read_table["pos"],
             y=read_table["height"],
             mode="markers",
             showlegend=False,
-            text=read_table["mod"],
+            text=same_text_for_all(read_table["mod"]),
             hoverinfo="text",
-            marker=dict(size=dotsize, color=read_table["quality"], colorscale="Reds"),
+            marker=dict(size=dotsize, color=compact_quality(read_table["quality"]), colorscale="Reds"),
         )
     else:
         legend_made = True
-        return go.Scatter(
+        return scatter(
             x=read_table["pos"],
             y=read_table["height"],
             mode="markers",
             showlegend=False,
-            text=read_table["mod"],
+            text=same_text_for_all(read_table["mod"]),
             hoverinfo="text",
             marker=dict(
                 size=dotsize,
-                color=read_table["quality"],
+                color=compact_quality(read_table["quality"]),
                 colorscale="Reds",
                 colorbar=dict(
                     title=dict(text="Modification probability", side="right"),

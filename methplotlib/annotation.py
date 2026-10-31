@@ -5,6 +5,16 @@ import sys
 from plotly.colors import DEFAULT_PLOTLY_COLORS as plcolors
 import gzip
 import logging
+import os
+from pathlib import Path
+
+# the MANE Select transcripts of GRCh38, available as the built-in annotation "mane"
+MANE_VERSION = "1.5"
+MANE_FILE = f"MANE.GRCh38.v{MANE_VERSION}.ensembl_genomic.gtf.gz"
+MANE_URL = (
+    "https://ftp.ncbi.nlm.nih.gov/refseq/MANE/MANE_human/"
+    f"release_{MANE_VERSION}/{MANE_FILE}"
+)
 
 
 class Transcript(object):
@@ -17,6 +27,42 @@ class Transcript(object):
         self.begin = min(list(itertools.chain.from_iterable(self.exon_tuples)))
         self.end = max(list(itertools.chain.from_iterable(self.exon_tuples)))
         self.color = ""
+
+
+def cache_dir():
+    """The directory to keep downloaded annotation in, following the XDG convention"""
+    base = os.environ.get("XDG_CACHE_HOME") or Path.home() / ".cache"
+    return Path(base) / "methplotlib"
+
+
+def resolve_annotation(gtf):
+    """
+    Return the path of the annotation to use for --gtf
+
+    "mane" is the built-in MANE Select annotation of GRCh38, downloaded once
+    and kept in the cache directory, unless a file named "mane" exists.
+    """
+    if gtf is None or gtf.lower() != "mane" or Path(gtf).exists():
+        return gtf
+    path = cache_dir() / MANE_FILE
+    if not path.is_file():
+        import shutil
+        import urllib.request
+
+        sys.stderr.write(f"Downloading the MANE v{MANE_VERSION} annotation to {path}\n")
+        path.parent.mkdir(parents=True, exist_ok=True)
+        # downloading to a temporary name, so that an interrupted download is not used later
+        partial = path.with_name(path.name + ".part")
+        # the timeout is per connection attempt and read, not for the entire download,
+        # and kept short as an unreachable IPv6 address is tried before IPv4
+        try:
+            with urllib.request.urlopen(MANE_URL, timeout=10) as response, open(partial, "wb") as out:
+                shutil.copyfileobj(response, out)
+        except OSError as e:
+            partial.unlink(missing_ok=True)
+            sys.exit(f"\n\nERROR: could not download the MANE annotation from {MANE_URL}:\n{e}\n")
+        os.replace(partial, path)
+    return str(path)
 
 
 def open_gtf(gtff):
@@ -44,9 +90,9 @@ def get_features(gtfline, type="gtf"):
     """
     Extract the desirable features from a gtf record
     """
-    chromosome, _, _, begin, end, _, strand, _, attributes = gtfline.split("\t")
+    chromosome, _, feature, begin, end, _, strand, _, attributes = gtfline.split("\t")
     gene, transcript = parse_attributes(attributes.rstrip(), type=type)
-    return [chromosome, int(begin), int(end), strand, gene, transcript]
+    return [chromosome, feature, int(begin), int(end), strand, gene, transcript]
 
 
 def parse_attributes(attributes, type="gtf"):
@@ -80,6 +126,31 @@ def transcripts_in_window(df, window, feature="transcript"):
         (df["begin"] <= window.end) & (df["end"] >= window.begin),
         feature,
     ].unique()
+
+
+def drop_genes_with_exons(df):
+    """
+    Remove the gene records of genes that also have exon records
+
+    A gene record spans the entire gene, and would otherwise be drawn as one exon
+    covering the introns. Genes without exon records keep their gene record.
+    """
+    genes_with_exons = df.loc[df["feature"] == "exon", "gene"].dropna().unique()
+    return df[~((df["feature"] == "gene") & df["gene"].isin(genes_with_exons))]
+
+
+def merge_intervals(intervals):
+    """
+    Merge overlapping and adjacent intervals of (begin, end) tuples,
+    returned sorted by begin
+    """
+    merged = []
+    for begin, end in sorted(intervals):
+        if merged and begin <= merged[-1][1] + 1:
+            merged[-1] = (merged[-1][0], max(merged[-1][1], end))
+        else:
+            merged.append((begin, end))
+    return merged
 
 
 def assign_colors_to_genes(transcripts):
@@ -119,11 +190,11 @@ def parse_annotation(gtff, window, simplify=False):
         )
     df = pd.DataFrame(
         data=records,
-        columns=["chromosome", "begin", "end", "strand", "gene", "transcript"],
+        columns=["chromosome", "feature", "begin", "end", "strand", "gene", "transcript"],
     )
     logging.info("Loaded GTF file, processing...")
+    df = drop_genes_with_exons(df)
     if simplify:
-        df.drop_duplicates(subset=["chromosome", "begin", "end", "gene"], inplace=True)
         res = []
         genes = transcripts_in_window(df, window, feature="gene")
         # grouping the features of interest once, rather than scanning the
@@ -132,13 +203,14 @@ def parse_annotation(gtff, window, simplify=False):
         for g in genes:
             gtable = per_gene.get(g)
             if gtable is not None and len(gtable):
+                # a meta-transcript of the gene: the exons of all its transcripts, merged
                 res.append(
                     Transcript(
                         transcript=gtable["gene"].tolist()[0],
                         gene=gtable["gene"].tolist()[0],
-                        exon_tuples=gtable.loc[:, ["begin", "end"]]
-                        .sort_values("begin")
-                        .itertuples(index=False, name=None),
+                        exon_tuples=merge_intervals(
+                            gtable.loc[:, ["begin", "end"]].itertuples(index=False, name=None)
+                        ),
                         strand=gtable["strand"].tolist()[0],
                     )
                 )

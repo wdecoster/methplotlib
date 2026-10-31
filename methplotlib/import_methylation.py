@@ -3,8 +3,7 @@ import pyranges as pr
 import numpy as np
 import sys
 import logging
-from methplotlib.utils import file_sniffer, flatten, bedmethyl_separator
-from itertools import repeat
+from methplotlib.utils import file_sniffer, flatten, bedmethyl_separator, header_lines
 
 
 class Modification(object):
@@ -264,6 +263,8 @@ def read_in_chunks(filename, window, sep, usecols, index_suggestion):
         sep=sep,
         iterator=True,
         chunksize=int(1e6),
+        # a header, e.g. a bedgraph track line, would otherwise be read as data
+        skiprows=header_lines(filename),
         header=None,
         usecols=usecols,
         dtype={0: str},
@@ -330,6 +331,7 @@ def parse_bedgraph(filename, name, window):
         table = pd.read_csv(
             filename,
             sep="\t",
+            skiprows=header_lines(filename),
             header=None,
             usecols=usecols,
             names=colnames,
@@ -422,6 +424,7 @@ def parse_bedmethyl(filename, name, window, smoothen=5, flavor="modkit", mods_of
         table = pd.read_csv(
             filename,
             sep=sep,
+            skiprows=header_lines(filename),
             header=None,
             usecols=usecols,
             dtype={0: str},
@@ -498,15 +501,40 @@ def parse_cram(filename, filetype, name, window, mods_of_interest=None):
     start_stops = []
     for read in cram.fetch(reference=str(window.chromosome), start=window.begin, end=window.end):
         if not read.is_supplementary and not read.is_secondary:
-            start_stops.append((read.query_name, read.reference_start, read.reference_end))
+            # the strand is kept here as well, for the reads without calls of a modification
+            start_stops.append(
+                (
+                    read.query_name,
+                    read.reference_start,
+                    read.reference_end,
+                    "-" if read.is_reverse else "+",
+                )
+            )
             mod_positions = get_modified_reference_positions(read)
             if mod_positions:
                 data.extend(mod_positions)
-    df = (
-        pd.DataFrame(data, columns=["read_name", "strand", "pos", "quality", "mod"])
-        .astype(dtype={"mod": "category", "quality": "float"})
-        .sort_values(["read_name", "pos"])
-    )
+    columns = ["read_name", "strand", "pos", "quality", "mod"]
+    if data:
+        # every context of every read is a block, with an array of positions and qualities,
+        # concatenated once rather than building a tuple per modified position
+        names, strands, positions, qualities, mods = zip(*data)
+        counts = [len(p) for p in positions]
+        df = pd.DataFrame(
+            {
+                "read_name": np.repeat(np.array(names, dtype=object), counts),
+                "strand": np.repeat(np.array(strands, dtype=object), counts),
+                "pos": np.concatenate(positions),
+                "quality": np.concatenate(qualities),
+                "mod": np.repeat(np.array(mods, dtype=object), counts),
+            }
+        )
+        # positions in softclips are missing, which makes the column float
+        # without missing positions, the column is kept as integers
+        if not df["pos"].isna().any():
+            df["pos"] = df["pos"].astype("int64")
+    else:
+        df = pd.DataFrame(data, columns=columns)
+    df = df.astype(dtype={"mod": "category", "quality": "float"}).sort_values(["read_name", "pos"])
 
 
     if mods_of_interest:
@@ -524,7 +552,7 @@ def parse_cram(filename, filetype, name, window, mods_of_interest=None):
             name=f"{name}_{mod}",
             called_sites=len(sub_df),
             start_end_table=pd.DataFrame(
-                start_stops, columns=["read_name", "posmin", "posmax"]
+                start_stops, columns=["read_name", "posmin", "posmax", "strand"]
             ).set_index("read_name"),
         )
         for mod, sub_df in df.groupby("mod") if len(sub_df) > 0
@@ -532,11 +560,19 @@ def parse_cram(filename, filetype, name, window, mods_of_interest=None):
 
 
 def get_modified_reference_positions(read):
+    """
+    Return the modified positions of a read as a list of blocks, one per context,
+    each block a tuple of read_name, strand, an array of pos, an array of quality and mod
+    """
     mod_positions = []
     if read.has_tag("Mm") or read.has_tag("MM"):
         modtag = "Mm" if read.has_tag("Mm") else "MM"
         qualtag = "Ml" if read.has_tag("Ml") else "ML"
         offset = 0
+        # these are the same for every context of the read, so only made once
+        sequence = None
+        refpos = None
+        all_likelihoods = read.get_tag(qualtag) if read.has_tag(qualtag) else None
         for context in read.get_tag(modtag).split(";"):
             if context:
                 basemod = context.split(",", 1)[0].replace('?', '')
@@ -554,48 +590,89 @@ def get_modified_reference_positions(read):
                     )
                 # The positions are encoded by specifying the number of non-modified occurences
                 # of that specific bases to skip in the read sequence
-                deltas = [int(i) for i in context.split(",")[1:]]
-                if not deltas:
+                deltas = np.array(context.split(",")[1:], dtype=int)
+                if not len(deltas):
                     continue
                 # Make an array with all positions for which a modification is reported
                 # In coordinates relative to occurences of the nucleotide in the read
                 locations = np.cumsum(deltas) + np.arange(len(deltas))
-                # Nake an array with all read positions for which that nucleotide exists in the read
-                # Oddly, get_forward_sequence() returns the sequence as it came from the sequencer
-                # This is the same direction as the Mm/Ml tags are specified in
-                # the positions of that nucleotide in the read, found with numpy
-                # as a python loop over every base of a long read is expensive
-                sequence = np.frombuffer(read.get_forward_sequence().encode(), dtype="S1")
+                if sequence is None:
+                    # Nake an array with all read positions for which that nucleotide exists in the read
+                    # Oddly, get_forward_sequence() returns the sequence as it came from the sequencer
+                    # This is the same direction as the Mm/Ml tags are specified in
+                    # the positions of that nucleotide in the read, found with numpy
+                    # as a python loop over every base of a long read is expensive
+                    sequence = np.frombuffer(read.get_forward_sequence().encode(), dtype="S1")
+                    # Convert the array of read coordinates to reference coordinates
+                    refpos = reference_positions(read)
+                    # the reference positions are incrementing coordinates
+                    # regardless of strand, so reversing the order for reverse_stranded reads
+                    if read.is_reverse:
+                        refpos = refpos[::-1]
                 base_index = np.flatnonzero(sequence == base.encode())
                 # Based on both arrays, find those read coordinates that have a modification
                 modified_bases = base_index[locations]
-                # Convert the array of read coordinates to reference coordinates
-                # full_length=True will make sure the list is of the same length as the read
-                # by adding 'None' for softclipped nucleotides
-                refpos = np.array(read.get_reference_positions(full_length=True))
-                # read.get_reference_positions() returns incrementing coordinates
-                # regardless of strand, so reversing the order for reverse_stranded reads
-                if read.is_reverse:
-                    refpos = refpos[::-1]
                 # The likelihoods are in an array of length of all Mm/MM deltas,
                 # and are not separated by context/modified nucleotide type
-                if read.has_tag(qualtag):
-                    likelihoods = read.get_tag(qualtag).tolist()[offset : offset + len(deltas)]
-                else:
-                    likelihoods = [255] * len(deltas)
-                offset += len(deltas)
-                mod_positions.extend(
-                    zip(
-                        repeat(read.query_name),  # read_name
-                        repeat("-" if read.is_reverse else "+"),  # strand
-                        refpos[modified_bases],  # pos
-                        likelihoods,  # quality
-                        repeat(basemod),  # mod
+                # A code of multiple letters (e.g. C+mh) is multiple modifications at the same
+                # positions, of which the likelihoods are interleaved per position.
+                # A ChEBI number is a single modification.
+                # A trailing '.' or '?' (whether unlisted bases are unmodified) is not a code.
+                codes = mod.rstrip(".")
+                codes = [codes] if codes.isdigit() else list(codes)
+                suffix = mod[len(mod.rstrip(".")) :]
+                n_codes = len(codes)
+                if all_likelihoods is not None:
+                    likelihoods = np.asarray(
+                        all_likelihoods[offset : offset + len(deltas) * n_codes], dtype=float
                     )
-                )
+                else:
+                    likelihoods = np.full(len(deltas) * n_codes, 255.0)
+                offset += len(deltas) * n_codes
+                # a short ML tag truncates the calls of this context, as zip() did before
+                n = len(likelihoods) // n_codes
+                positions = refpos[modified_bases[:n]]
+                for k, code in enumerate(codes):
+                    mod_positions.append(
+                        (
+                            read.query_name,  # read_name
+                            "-" if read.is_reverse else "+",  # strand
+                            positions,  # pos
+                            likelihoods[k : n * n_codes : n_codes],  # quality
+                            f"{base}+{code}{suffix}",  # mod
+                        )
+                    )
         return mod_positions
     else:
         return None
+
+
+# which CIGAR operations (M, I, D, N, S, H, P, =, X, B) consume query or reference bases
+CIGAR_CONSUMES_QUERY = np.array([1, 1, 0, 0, 1, 0, 0, 1, 1, 0], dtype=bool)
+CIGAR_CONSUMES_REFERENCE = np.array([1, 0, 1, 1, 0, 0, 0, 1, 1, 0], dtype=bool)
+
+
+def reference_positions(read):
+    """
+    The reference position of every base of the read, NaN where there is none (insertions, softclips)
+
+    The same as read.get_reference_positions(full_length=True), with NaN rather than None,
+    but made from the CIGAR with numpy as converting that list of a long read is expensive
+    """
+    ops, lengths = np.array(read.cigartuples).T
+    reference_lengths = lengths * CIGAR_CONSUMES_REFERENCE[ops]
+    # the reference position at which every operation starts
+    op_starts = read.reference_start + np.cumsum(reference_lengths) - reference_lengths
+    query_ops = CIGAR_CONSUMES_QUERY[ops]
+    query_lengths = lengths[query_ops]
+    # for every base of the read the operation it belongs to, and its offset in that operation
+    op_of_base = np.repeat(np.flatnonzero(query_ops), query_lengths)
+    offset = np.arange(query_lengths.sum()) - np.repeat(
+        np.cumsum(query_lengths) - query_lengths, query_lengths
+    )
+    positions = (op_starts[op_of_base] + offset).astype(float)
+    positions[~CIGAR_CONSUMES_REFERENCE[ops][op_of_base]] = np.nan
+    return positions
 
 
 def errs_tab(n):

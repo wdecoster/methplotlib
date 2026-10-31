@@ -2,6 +2,7 @@ import methplotlib.plots as plots
 import methplotlib.utils as utils
 import methplotlib.qc as qc
 from methplotlib.import_methylation import get_data
+from methplotlib.annotation import resolve_annotation
 import logging
 import sys
 
@@ -11,6 +12,7 @@ def main():
     if args.example:
         utils.print_example()
     utils.init_logs(args)
+    args.gtf = resolve_annotation(args.gtf)
     windows = utils.make_windows(args.window, fasta=args.fasta)
     for window in windows:
         logging.info(f"Processing {window.string}")

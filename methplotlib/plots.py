@@ -7,6 +7,15 @@ import numpy as np
 
 legend_made = False
 
+# Above this number of dots, a per read panel is drawn with WebGL rather than SVG,
+# as an SVG element per dot makes the browser slow to show, zoom and pan.
+WEBGL_THRESHOLD = 10_000
+
+
+def scatter_type(n_points):
+    """The scatter trace type for a per read panel with n_points dots"""
+    return go.Scattergl if n_points > WEBGL_THRESHOLD else go.Scatter
+
 
 class DataTraces(object):
     def __init__(self, traces, types, names, split):
@@ -188,11 +197,15 @@ def make_per_read_meth_traces_phred(
     table = table.join(df_heights, on="read_name", how="outer")
     # one row per read, to avoid scanning the entire table for every read
     per_read = table.drop_duplicates(subset="read_name").set_index("read_name")
-    traces = make_per_read_line_trace(per_read, minmax_table, df_heights, max_cov)
+    read_table = table[table["quality"] > minqual]
+    # the lines of the reads are of the same type as the dots,
+    # as WebGL traces are drawn on a layer above the SVG traces
+    scatter = scatter_type(len(read_table))
+    traces = make_per_read_line_trace(
+        per_read, minmax_table, df_heights, max_cov, scatter=scatter
+    )
     traces.append(
-        make_per_position_phred_scatter(
-            read_table=table[table["quality"] > minqual], dotsize=dotsize
-        )
+        make_per_position_phred_scatter(read_table=read_table, dotsize=dotsize, scatter=scatter)
     )
     return traces
 
@@ -216,11 +229,12 @@ def make_per_read_meth_traces_llr(
         )
     # one row per read, to avoid scanning the entire table for every read
     per_read = table.drop_duplicates(subset="read_name").set_index("read_name")
+    scatter = scatter_type(len(table))
     traces = make_per_read_line_trace(
-        per_read, minmax_table, df_heights, max_cov, phased=phased, size=dotsize
+        per_read, minmax_table, df_heights, max_cov, phased=phased, size=dotsize, scatter=scatter
     )
     traces.append(
-        make_per_position_likelihood_scatter(read_table=table, dotsize=dotsize)
+        make_per_position_likelihood_scatter(read_table=table, dotsize=dotsize, scatter=scatter)
     )
     return traces
 
@@ -323,7 +337,9 @@ def phase_color(phase):
         return "black"
 
 
-def make_per_read_line_trace(per_read, minmax_table, df_heights, max_cov, phased=False, size=4):
+def make_per_read_line_trace(
+    per_read, minmax_table, df_heights, max_cov, phased=False, size=4, scatter=go.Scatter
+):
     """Make a grey line for every read,
     with black arrow symbols on the edges indicating strand
 
@@ -358,7 +374,7 @@ def make_per_read_line_trace(per_read, minmax_table, df_heights, max_cov, phased
         symbols.extend([symbol] * 3)
         colors.extend([color] * 3)
     return [
-        go.Scatter(
+        scatter(
             x=x,
             y=y,
             mode="lines+markers",
@@ -374,7 +390,7 @@ def make_per_read_line_trace(per_read, minmax_table, df_heights, max_cov, phased
     ]
 
 
-def make_per_position_likelihood_scatter(read_table, maxval=0.75, dotsize=4):
+def make_per_position_likelihood_scatter(read_table, maxval=0.75, dotsize=4, scatter=go.Scatter):
     """Make scatter plot per CpG per read
     with the RdBu colorscale from plotly 3.0.0, showing the
     scaled log likelihood of having methylation here"""
@@ -386,7 +402,7 @@ def make_per_position_likelihood_scatter(read_table, maxval=0.75, dotsize=4):
         [0.7, "rgb(230,145,90)"],
         [1, "rgb(178,10,28)"],
     ]
-    return go.Scatter(
+    return scatter(
         x=read_table["pos"],
         y=read_table["height"],
         mode="markers",
@@ -431,11 +447,11 @@ def compact_quality(quality):
     return quality
 
 
-def make_per_position_phred_scatter(read_table, dotsize=4):
+def make_per_position_phred_scatter(read_table, dotsize=4, scatter=go.Scatter):
     """Make scatter plot per CpG per read"""
     global legend_made
     if legend_made or read_table.dropna().empty:
-        return go.Scatter(
+        return scatter(
             x=read_table["pos"],
             y=read_table["height"],
             mode="markers",
@@ -446,7 +462,7 @@ def make_per_position_phred_scatter(read_table, dotsize=4):
         )
     else:
         legend_made = True
-        return go.Scatter(
+        return scatter(
             x=read_table["pos"],
             y=read_table["height"],
             mode="markers",

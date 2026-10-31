@@ -16,8 +16,10 @@ jobs:
         python-version: '3.13'
     - name: Install dependencies
       run: |
+        sudo apt-get update
+        sudo apt-get install -y tabix
         python -m pip install --upgrade pip
-        pip install .
+        pip install . pytest
     - name: Lint with flake8
       run: |
         pip install flake8
@@ -27,4 +29,5 @@ jobs:
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Test
       run: |
+        pytest tests
         bash examples/test.sh

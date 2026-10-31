@@ -4,6 +4,19 @@ import pyranges as pr
 import numpy as np
 
 
+def fisher_exact(tp, fp, fn, tn, pseudocount=0):
+    """
+    The same as pyranges.stats.fisher_exact, which passes 64 bit integers
+    to the fisher package, while its versions since 0.2.0 require 32 bit integers
+    """
+    from fisher import pvalue_npy
+
+    tp, fp, fn, tn = (np.asarray(x, dtype=np.uint32) for x in (tp, fp, fn, tn))
+    left, right, twosided = pvalue_npy(tp, fp, fn, tn)
+    OR = ((tp + pseudocount) / (fp + pseudocount)) / ((fn + pseudocount) / (tn + pseudocount))
+    return pd.DataFrame({"OR": OR, "P": twosided, "PLeft": left, "PRight": right})
+
+
 def _methylated_and_freq_to_zero(df):
 
     only_in_bed = (df.methylated == -1) & (df.methylated_b == -1)
@@ -54,7 +67,7 @@ def main(a, b, bed):
     m = m.apply(_methylated_and_freq_to_zero).drop(like="(Start|End|ID)_b|ID")
 
     m1, c1, m2, c2 = m.methylated, m.calls, m.methylated_b, m.calls_b,
-    fe = pr.stats.fisher_exact(c1 - m1, m1, c2 - m2, m2, pseudocount=0.01)
+    fe = fisher_exact(c1 - m1, m1, c2 - m2, m2, pseudocount=0.01)
     fe.insert(fe.shape[1], "FDR", pr.stats.fdr(fe.P))
 
     m = m.insert(fe[['OR', 'P', 'FDR']])

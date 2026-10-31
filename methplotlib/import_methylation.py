@@ -33,6 +33,27 @@ def get_data(args, window):
     return flatten([read_mods(f, n, window, args) for f, n in zip(args.methylation, args.names)])
 
 
+# the legacy formats warned about, to do so once per file rather than for every window
+legacy_warned = set()
+
+
+def legacy_format_notice(filename, file_type):
+    """
+    nanopolish and nanocompore output is still supported, but no longer developed,
+    as modification calls are now in the MM/ML tags of bam/cram (e.g. from dorado)
+    and summarized with modkit
+    """
+    if filename in legacy_warned:
+        return
+    legacy_warned.add(filename)
+    tool = "nanocompore" if file_type == "nanocompore" else "nanopolish"
+    sys.stderr.write(
+        f"Note: {filename} is {tool} output, a legacy format that is kept working as is, "
+        "but may be removed in a future major version. "
+        "Consider bam/cram with MM/ML tags, or bedMethyl from modkit.\n"
+    )
+
+
 def read_mods(filename, name, window, args):
     """
     converts a file from nanopolish to a pandas dataframe
@@ -45,6 +66,8 @@ def read_mods(filename, name, window, args):
     """
     file_type = file_sniffer(filename)
     logging.info(f"File {filename} is of type {file_type}")
+    if file_type.startswith("nanopolish") or file_type == "nanocompore":
+        legacy_format_notice(filename, file_type)
     try:
         if file_type.startswith("nanopolish"):
             return parse_nanopolish(filename, file_type, name, window, smoothen=args.smooth)

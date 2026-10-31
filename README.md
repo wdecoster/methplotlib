@@ -3,12 +3,18 @@
 
 # METHPLOTLIB
 
-This script generates a browser view on a window using data from  
-i) [nanopolish](https://github.com/jts/nanopolish), either as methylation calls or methylation frequencies (as processed by calculate_methylation_frequency.py). The methylation calls can additionally be phased using scripts/annotate_calls_by_phase.py and scripts/split_calls_by_phase.py  
-ii) [nanocompore](https://github.com/tleonardi/nanocompore)  
-iii) in ont-cram format with MM/ML tags according to the SAM specifications  
-iv) in bedgraph format, with 4 columns (chromosome, start, end, value) or the 5 columns written by `modkit pileup --bedgraph`  
-v) in bedMethyl format, as written by [modkit](https://github.com/nanoporetech/modkit) `pileup` (18 columns, with or without `--only-tabs`) or by `modbam2bed --extended` (14 columns). Files containing multiple modifications (e.g. 5mC and 5hmC) do not have to be split up: each modification gets its own track, and `--mods` can be used to restrict to some of them  
+This script generates an interactive browser view on a window using data from  
+i) bam or cram with MM/ML tags according to the SAM specifications, e.g. from dorado  
+ii) bedMethyl, as written by [modkit](https://github.com/nanoporetech/modkit) `pileup` (18 columns, with or without `--only-tabs`) or by `modbam2bed --extended` (14 columns). Files containing multiple modifications (e.g. 5mC and 5hmC) do not have to be split up: each modification gets its own track, and `--mods` can be used to restrict to some of them  
+iii) bedgraph, with 4 columns (chromosome, start, end, value) or the 5 columns written by `modkit pileup --bedgraph`  
+
+Annotation can be added from a gtf or bed file, or with `-g mane` from the MANE Select transcripts of GRCh38, which are downloaded once.
+
+### Legacy formats
+Output of [nanopolish](https://github.com/jts/nanopolish) (methylation calls, optionally phased with scripts/annotate_calls_by_phase.py and scripts/split_calls_by_phase.py, or frequencies from calculate_methylation_frequency.py) and of [nanocompore](https://github.com/tleonardi/nanocompore) is still supported. These formats are kept working as they are, but get no new features and may be removed in a future major version. The same goes for the Snakemake workflow for nanopolish and the companion scripts below, which work on nanopolish output.
+
+### methplotlib-rs
+[methplotlib-rs](https://github.com/wdecoster/methplotlib-rs) is a Rust version for static images (png, svg or pdf) of bam/cram, bedMethyl and bedgraph data. It is not a replacement: use this Python version to explore a region interactively, and the Rust version to make many figures, e.g. in a pipeline, as a single binary without dependencies.
 
 ## INSTALLATION
 
@@ -61,13 +67,13 @@ optional arguments:
 
 ```
 
-## Snakemake workflow
+## Snakemake workflow (legacy)
 For streamlining nanopolish a Snakefile is included (using snakemake). The workflow uses a config file, of which an example is in this repository.
 
 ## Example data
-The `examples` folder contains calls and frequencies for the human ACTB gene from PromethION sequencing of NA19240. An example command is available.
+The `examples` folder contains nanopolish calls and frequencies for the human ACTB gene from PromethION sequencing of NA19240, and small synthetic bam, bedMethyl and bedgraph files (made with `scripts/make_test_data.py` of methplotlib-rs). Example commands are in `examples/test.sh`.
 
-## Companion scripts
+## Companion scripts (legacy)
 The `scripts` folder contains scripts for phasing modification calls in haplotypes based on [WhatsHap](https://whatshap.readthedocs.io/en/latest/) phasing, allele specific modification testing for phased data and differential modification testing across subjects.
 
 ## TO DO - CONTRIBUTIONS WELCOME

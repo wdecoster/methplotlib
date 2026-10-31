@@ -55,8 +55,12 @@ def make_windows(full_window, max_size=1e6, fasta=None):
     if reg.size > max_size:
         chunks = ceil(reg.size / max_size)
         chsize = ceil(reg.size / chunks)
+        # the last chunk ends at the end of the window, not beyond it
         return [
-            Region(f"{reg.chromosome}:{reg.begin + i * chsize}-{reg.begin + (i + 1) * chsize}")
+            Region(
+                f"{reg.chromosome}:{reg.begin + i * chsize}-"
+                f"{min(reg.begin + (i + 1) * chsize, reg.end)}"
+            )
             for i in range(chunks)
         ]
     else:
@@ -248,6 +252,18 @@ def first_data_line(filename):
             if line.strip() and not line.startswith(("#", "track", "browser")):
                 return line.rstrip("\n").rstrip("\r")
     sys.exit(f"\n\nERROR: File {filename} does not contain any data!\n")
+
+
+def header_lines(filename):
+    """
+    The number of lines before the first line that contains data,
+    as empty lines, comments and browser/track lines are not data
+    """
+    with open_text(filename) as handle:
+        for number, line in enumerate(handle):
+            if line.strip() and not line.startswith(("#", "track", "browser")):
+                return number
+    return 0
 
 
 def is_bedmethyl(fields):

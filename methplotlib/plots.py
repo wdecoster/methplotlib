@@ -348,7 +348,8 @@ def make_per_read_line_trace(per_read, minmax_table, df_heights, max_cov, phased
         minmax_table.loc[shown, "posmin"],
         minmax_table.loc[shown, "posmax"],
         df_heights.loc[shown, "height"],
-        per_read.loc[shown, "strand"],
+        # the strand of the reads without calls is only in the table of all reads
+        (minmax_table if "strand" in minmax_table else per_read).loc[shown, "strand"],
     ):
         symbol = "triangle-right" if strand == "+" else "triangle-left"
         color = phase_color(per_read.at[read, "HP"]) if phased else "black"

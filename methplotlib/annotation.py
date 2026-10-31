@@ -44,9 +44,9 @@ def get_features(gtfline, type="gtf"):
     """
     Extract the desirable features from a gtf record
     """
-    chromosome, _, _, begin, end, _, strand, _, attributes = gtfline.split("\t")
+    chromosome, _, feature, begin, end, _, strand, _, attributes = gtfline.split("\t")
     gene, transcript = parse_attributes(attributes.rstrip(), type=type)
-    return [chromosome, int(begin), int(end), strand, gene, transcript]
+    return [chromosome, feature, int(begin), int(end), strand, gene, transcript]
 
 
 def parse_attributes(attributes, type="gtf"):
@@ -80,6 +80,31 @@ def transcripts_in_window(df, window, feature="transcript"):
         (df["begin"] <= window.end) & (df["end"] >= window.begin),
         feature,
     ].unique()
+
+
+def drop_genes_with_exons(df):
+    """
+    Remove the gene records of genes that also have exon records
+
+    A gene record spans the entire gene, and would otherwise be drawn as one exon
+    covering the introns. Genes without exon records keep their gene record.
+    """
+    genes_with_exons = df.loc[df["feature"] == "exon", "gene"].dropna().unique()
+    return df[~((df["feature"] == "gene") & df["gene"].isin(genes_with_exons))]
+
+
+def merge_intervals(intervals):
+    """
+    Merge overlapping and adjacent intervals of (begin, end) tuples,
+    returned sorted by begin
+    """
+    merged = []
+    for begin, end in sorted(intervals):
+        if merged and begin <= merged[-1][1] + 1:
+            merged[-1] = (merged[-1][0], max(merged[-1][1], end))
+        else:
+            merged.append((begin, end))
+    return merged
 
 
 def assign_colors_to_genes(transcripts):
@@ -119,11 +144,11 @@ def parse_annotation(gtff, window, simplify=False):
         )
     df = pd.DataFrame(
         data=records,
-        columns=["chromosome", "begin", "end", "strand", "gene", "transcript"],
+        columns=["chromosome", "feature", "begin", "end", "strand", "gene", "transcript"],
     )
     logging.info("Loaded GTF file, processing...")
+    df = drop_genes_with_exons(df)
     if simplify:
-        df.drop_duplicates(subset=["chromosome", "begin", "end", "gene"], inplace=True)
         res = []
         genes = transcripts_in_window(df, window, feature="gene")
         # grouping the features of interest once, rather than scanning the
@@ -132,13 +157,14 @@ def parse_annotation(gtff, window, simplify=False):
         for g in genes:
             gtable = per_gene.get(g)
             if gtable is not None and len(gtable):
+                # a meta-transcript of the gene: the exons of all its transcripts, merged
                 res.append(
                     Transcript(
                         transcript=gtable["gene"].tolist()[0],
                         gene=gtable["gene"].tolist()[0],
-                        exon_tuples=gtable.loc[:, ["begin", "end"]]
-                        .sort_values("begin")
-                        .itertuples(index=False, name=None),
+                        exon_tuples=merge_intervals(
+                            gtable.loc[:, ["begin", "end"]].itertuples(index=False, name=None)
+                        ),
                         strand=gtable["strand"].tolist()[0],
                     )
                 )

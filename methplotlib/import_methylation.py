@@ -3,7 +3,7 @@ import pyranges as pr
 import numpy as np
 import sys
 import logging
-from methplotlib.utils import file_sniffer, flatten, bedmethyl_separator
+from methplotlib.utils import file_sniffer, flatten, bedmethyl_separator, header_lines
 
 
 class Modification(object):
@@ -263,6 +263,8 @@ def read_in_chunks(filename, window, sep, usecols, index_suggestion):
         sep=sep,
         iterator=True,
         chunksize=int(1e6),
+        # a header, e.g. a bedgraph track line, would otherwise be read as data
+        skiprows=header_lines(filename),
         header=None,
         usecols=usecols,
         dtype={0: str},
@@ -329,6 +331,7 @@ def parse_bedgraph(filename, name, window):
         table = pd.read_csv(
             filename,
             sep="\t",
+            skiprows=header_lines(filename),
             header=None,
             usecols=usecols,
             names=colnames,
@@ -421,6 +424,7 @@ def parse_bedmethyl(filename, name, window, smoothen=5, flavor="modkit", mods_of
         table = pd.read_csv(
             filename,
             sep=sep,
+            skiprows=header_lines(filename),
             header=None,
             usecols=usecols,
             dtype={0: str},
@@ -497,7 +501,15 @@ def parse_cram(filename, filetype, name, window, mods_of_interest=None):
     start_stops = []
     for read in cram.fetch(reference=str(window.chromosome), start=window.begin, end=window.end):
         if not read.is_supplementary and not read.is_secondary:
-            start_stops.append((read.query_name, read.reference_start, read.reference_end))
+            # the strand is kept here as well, for the reads without calls of a modification
+            start_stops.append(
+                (
+                    read.query_name,
+                    read.reference_start,
+                    read.reference_end,
+                    "-" if read.is_reverse else "+",
+                )
+            )
             mod_positions = get_modified_reference_positions(read)
             if mod_positions:
                 data.extend(mod_positions)
@@ -540,7 +552,7 @@ def parse_cram(filename, filetype, name, window, mods_of_interest=None):
             name=f"{name}_{mod}",
             called_sites=len(sub_df),
             start_end_table=pd.DataFrame(
-                start_stops, columns=["read_name", "posmin", "posmax"]
+                start_stops, columns=["read_name", "posmin", "posmax", "strand"]
             ).set_index("read_name"),
         )
         for mod, sub_df in df.groupby("mod") if len(sub_df) > 0
@@ -602,22 +614,34 @@ def get_modified_reference_positions(read):
                 modified_bases = base_index[locations]
                 # The likelihoods are in an array of length of all Mm/MM deltas,
                 # and are not separated by context/modified nucleotide type
+                # A code of multiple letters (e.g. C+mh) is multiple modifications at the same
+                # positions, of which the likelihoods are interleaved per position.
+                # A ChEBI number is a single modification.
+                # A trailing '.' or '?' (whether unlisted bases are unmodified) is not a code.
+                codes = mod.rstrip(".")
+                codes = [codes] if codes.isdigit() else list(codes)
+                suffix = mod[len(mod.rstrip(".")) :]
+                n_codes = len(codes)
                 if all_likelihoods is not None:
-                    likelihoods = np.asarray(all_likelihoods[offset : offset + len(deltas)], dtype=float)
-                else:
-                    likelihoods = np.full(len(deltas), 255.0)
-                offset += len(deltas)
-                # a short ML tag truncates the calls of this context, as zip() did before
-                n = len(likelihoods)
-                mod_positions.append(
-                    (
-                        read.query_name,  # read_name
-                        "-" if read.is_reverse else "+",  # strand
-                        refpos[modified_bases[:n]],  # pos
-                        likelihoods,  # quality
-                        basemod,  # mod
+                    likelihoods = np.asarray(
+                        all_likelihoods[offset : offset + len(deltas) * n_codes], dtype=float
                     )
-                )
+                else:
+                    likelihoods = np.full(len(deltas) * n_codes, 255.0)
+                offset += len(deltas) * n_codes
+                # a short ML tag truncates the calls of this context, as zip() did before
+                n = len(likelihoods) // n_codes
+                positions = refpos[modified_bases[:n]]
+                for k, code in enumerate(codes):
+                    mod_positions.append(
+                        (
+                            read.query_name,  # read_name
+                            "-" if read.is_reverse else "+",  # strand
+                            positions,  # pos
+                            likelihoods[k : n * n_codes : n_codes],  # quality
+                            f"{base}+{code}{suffix}",  # mod
+                        )
+                    )
         return mod_positions
     else:
         return None

@@ -38,7 +38,8 @@ optional arguments:
   -n, --names NAMES [NAMES ...]
                         names of datasets in --methylation
   -w, --window WINDOW   window (region) to which the visualisation has to be restricted
-  -g, --gtf GTF         add annotation based on a gtf file
+  -g, --gtf GTF         add annotation based on a gtf file, or 'mane' for the
+                        MANE Select transcripts of GRCh38 (downloaded once)
   -b, --bed BED         add annotation based on a bed file
   -f, --fasta FASTA     required when --window is an entire chromosome, contig or transcript
   --simplify            simplify annotation track to show genes rather than transcripts

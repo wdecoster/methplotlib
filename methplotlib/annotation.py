@@ -5,6 +5,16 @@ import sys
 from plotly.colors import DEFAULT_PLOTLY_COLORS as plcolors
 import gzip
 import logging
+import os
+from pathlib import Path
+
+# the MANE Select transcripts of GRCh38, available as the built-in annotation "mane"
+MANE_VERSION = "1.5"
+MANE_FILE = f"MANE.GRCh38.v{MANE_VERSION}.ensembl_genomic.gtf.gz"
+MANE_URL = (
+    "https://ftp.ncbi.nlm.nih.gov/refseq/MANE/MANE_human/"
+    f"release_{MANE_VERSION}/{MANE_FILE}"
+)
 
 
 class Transcript(object):
@@ -17,6 +27,42 @@ class Transcript(object):
         self.begin = min(list(itertools.chain.from_iterable(self.exon_tuples)))
         self.end = max(list(itertools.chain.from_iterable(self.exon_tuples)))
         self.color = ""
+
+
+def cache_dir():
+    """The directory to keep downloaded annotation in, following the XDG convention"""
+    base = os.environ.get("XDG_CACHE_HOME") or Path.home() / ".cache"
+    return Path(base) / "methplotlib"
+
+
+def resolve_annotation(gtf):
+    """
+    Return the path of the annotation to use for --gtf
+
+    "mane" is the built-in MANE Select annotation of GRCh38, downloaded once
+    and kept in the cache directory, unless a file named "mane" exists.
+    """
+    if gtf is None or gtf.lower() != "mane" or Path(gtf).exists():
+        return gtf
+    path = cache_dir() / MANE_FILE
+    if not path.is_file():
+        import shutil
+        import urllib.request
+
+        sys.stderr.write(f"Downloading the MANE v{MANE_VERSION} annotation to {path}\n")
+        path.parent.mkdir(parents=True, exist_ok=True)
+        # downloading to a temporary name, so that an interrupted download is not used later
+        partial = path.with_name(path.name + ".part")
+        # the timeout is per connection attempt and read, not for the entire download,
+        # and kept short as an unreachable IPv6 address is tried before IPv4
+        try:
+            with urllib.request.urlopen(MANE_URL, timeout=10) as response, open(partial, "wb") as out:
+                shutil.copyfileobj(response, out)
+        except OSError as e:
+            partial.unlink(missing_ok=True)
+            sys.exit(f"\n\nERROR: could not download the MANE annotation from {MANE_URL}:\n{e}\n")
+        os.replace(partial, path)
+    return str(path)
 
 
 def open_gtf(gtff):

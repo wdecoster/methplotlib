@@ -100,7 +100,12 @@ def get_args():
         help="window (region) to which the visualisation has to be restricted",
         required=True if "--example" not in sys.argv else False,
     )
-    parser.add_argument("-g", "--gtf", help="add annotation based on a gtf file")
+    parser.add_argument(
+        "-g",
+        "--gtf",
+        help="add annotation based on a gtf file, "
+        "or 'mane' for the MANE Select transcripts of GRCh38 (downloaded once)",
+    )
     parser.add_argument("-b", "--bed", help="add annotation based on a bed file")
     parser.add_argument(
         "-f",
